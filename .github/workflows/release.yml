@@ -1,0 +1,75 @@
+name: Release
+
+# Publish flow: branch → PR → merge to main. On every push to main, CI reads the
+# version from package.json; if no git tag exists for it yet, it builds and cuts a
+# GitHub release (tag + module.json + module.zip). So a merge publishes ONLY when
+# the version was bumped — ordinary merges (docs, fixes without a bump) are no-ops.
+# Bump module/package.json "version" (semver, no "v" prefix) to release.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # create the tag/release and upload assets
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.decide.outputs.publish }}
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need tags to know what's already released
+      - id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: decide
+        run: |
+          if git rev-parse -q --verify "refs/tags/${{ steps.ver.outputs.version }}" >/dev/null; then
+            echo "Tag ${{ steps.ver.outputs.version }} already exists — no release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version ${{ steps.ver.outputs.version }} is new — will release."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4 # version from packageManager in package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          MODULE_VERSION: ${{ needs.check.outputs.version }}
+          GH_PROJECT: ${{ github.repository }}
+          GH_TAG: ${{ needs.check.outputs.version }}
+        run: pnpm build
+
+      - name: Package module.zip
+        run: |
+          cp README.md LICENSE PRIVACY.md dist/
+          cd dist && zip -r ../module.zip .
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.check.outputs.version }}
+          files: |
+            dist/module.json
+            module.zip
+          generate_release_notes: true

@@ -1,0 +1,9 @@
+allowBuilds:
+  "@league-of-foundry-developers/foundry-vtt-types": true
+  esbuild: true
+blockExoticSubdeps: false
+saveExact: true
+engineStrict: true
+# fvtt-types is a git ref pnpm can't cheaply verify, so it re-installs before every
+# script run. Skip the pre-run check; run `pnpm install` manually after dep changes.
+verifyDepsBeforeRun: false
