@@ -1,0 +1,23 @@
+{
+  "name": "whatwerolled-foundry-module",
+  "version": "0.1.0",
+  "description": "What We Rolled — Foundry VTT module that records your table's chat rolls for your What We Rolled dashboard.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": "24.13.0"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "24.13.2",
+    "fvtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
+    "prettier": "3.8.4",
+    "typescript": "5.9.3",
+    "vite": "8.1.0"
+  }
+}
