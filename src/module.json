@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/foundryvtt-manifest.json",
   "id": "whatwerolled",
   "title": "What We Rolled",
-  "description": "Records every chat roll at your table and ships it to your What We Rolled dashboard.",
-  "version": "0.1.0",
+  "description": "Collects every roll from your Foundry game, so you can look back on all of them — your campaign, in numbers.",
+  "version": "0.1.1",
   "type": "module",
   "authors": [{ "name": "Oleksii Siryi" }],
   "compatibility": {

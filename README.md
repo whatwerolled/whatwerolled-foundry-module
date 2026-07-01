@@ -1,13 +1,19 @@
 # What We Rolled
 
-Turn your Foundry sessions into a campaign-long stats dashboard. This module
-records every chat roll your table makes and sends it to your
-**What We Rolled** account, so you can look back and see hit rates, damage
-dealt, saves blown, lucky nat 20s, and the bard's truly unfortunate
-performance checks.
+**Your table rolls a lot of dice. Now you can see all of them.**
+
+What We Rolled collects every roll from your game, so you can look back on all of
+them — the nat 20s, the clutch saves, the cursed luck. Your campaign, in numbers.
 
 ![Foundry v14](https://img.shields.io/badge/Foundry-v14-informational)
 ![dnd5e v5+](https://img.shields.io/badge/dnd5e-v5%2B-informational)
+
+**🌐 [whatwerolled.com](https://whatwerolled.com) · 🎲 [Open the app](https://app.whatwerolled.com)**
+
+> This module is the **Foundry VTT collector** for [What We Rolled](https://whatwerolled.com) — a
+> platform for capturing and visualizing what your table actually rolls. Foundry + D&D 5e is the
+> first surface; the [website](https://whatwerolled.com) is where those rolls become your
+> campaign's history, charts, and numbers to look back on. More systems on the way.
 
 ---
 
@@ -42,7 +48,7 @@ Then enable **What We Rolled** in your world's module list.
 
 ## Setup
 
-1. Sign in at your What We Rolled dashboard and create (or open) a campaign.
+1. Sign in at [your What We Rolled dashboard](https://app.whatwerolled.com) and create (or open) a campaign.
 2. Copy the campaign's **Campaign ID**.
 3. In Foundry, go to **Game Settings → Configure Settings → What We Rolled**:
 
