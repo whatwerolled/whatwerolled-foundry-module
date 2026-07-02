@@ -73,3 +73,13 @@ jobs:
             dist/module.json
             module.zip
           generate_release_notes: true
+
+      # List the version on foundryvtt.com via the Package Release API. Runs after
+      # the release exists so the release-specific manifest URL resolves. No-op if
+      # the FOUNDRY_RELEASE_TOKEN secret isn't set.
+      - name: List version on foundryvtt.com
+        env:
+          FOUNDRY_RELEASE_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+          VERSION: ${{ needs.check.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/foundry-release.mjs
