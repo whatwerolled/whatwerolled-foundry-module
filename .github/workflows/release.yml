@@ -65,6 +65,13 @@ jobs:
           cp README.md LICENSE PRIVACY.md dist/
           cd dist && zip -r ../module.zip .
 
+      # GM-readable release notes: use this version's CHANGELOG.md section as the
+      # release body, instead of auto-generated commit/PR titles.
+      - name: Build release notes
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: node .github/scripts/release-notes.mjs
+
       - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
@@ -72,7 +79,7 @@ jobs:
           files: |
             dist/module.json
             module.zip
-          generate_release_notes: true
+          body_path: RELEASE_BODY.md
 
       # List the version on foundryvtt.com via the Package Release API. Runs after
       # the release exists so the release-specific manifest URL resolves. No-op if
