@@ -3,6 +3,13 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.2.0
+
+**Now fully supports [Ready Set Roll (Reforged)](https://foundryvtt.com/packages/rsreforged).**
+Attack and damage rolls made through RSReforged now show their full breakdown — where each
+bonus comes from (ability, proficiency, and so on), not just the total — the same as your
+normal rolls.
+
 ## 0.1.1
 
 **What We Rolled collects every roll from your Foundry game** — attacks, damage, saves, skill and ability checks, and more — into your campaign at [whatwerolled.com](https://whatwerolled.com), where they become your history and stats over time.

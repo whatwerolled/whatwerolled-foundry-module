@@ -1,3 +1,4 @@
+import { MODULE_ID } from "../constants";
 import { RollType } from "../types";
 import {
   type AttackActivity,
@@ -70,24 +71,36 @@ function proficiencyMultiplier(
 }
 
 function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index: number): void {
-  const messageConfig = messageConfigByProcess.get(rollConfig);
-  if (!messageConfig) return;
-
   // For skill / tool checks dnd5e stamps the chosen ability (which may have
   // been overridden in the dropdown) onto the per-roll `data.abilityId`,
-  // not back onto `rollConfig.ability`. Prefer the per-roll value. Attacks keep
-  // the ability on the activity (rollConfig.subject) — so `@mod` normalizes.
+  // not back onto `rollConfig.ability`. Prefer the per-roll value. Attacks/damage
+  // keep the ability on the activity (rollConfig.subject) — so `@mod` normalizes.
   const data = builtConfig.data as { abilityId?: string } | undefined;
-  const rollType = rollTypeFromConfig(messageConfig);
   const ability =
     data?.abilityId ??
     rollConfig.ability ??
-    (rollType === RollType.Attack || rollType === RollType.Damage
-      ? (rollConfig.subject as unknown as AttackActivity).ability
-      : undefined);
+    (rollConfig.subject as unknown as AttackActivity | undefined)?.ability;
 
   const parts = capturePartValues(builtConfig.parts, builtConfig.data, ability);
   if (parts.length === 0) return;
+
+  // Stamp the parts onto the roll's OWN options. dnd5e builds the Roll from this
+  // config (`new Roll(formula, config.data, config.options)`) and a Roll serialises
+  // its options, so the breakdown travels WITH the roll. This is what lets modules
+  // that re-home rolls into their own message — RSReforged rolls attack/damage with
+  // `create: false` and injects the Roll objects into one combined message — still
+  // carry per-roll sources; the frontend reads them off each roll regardless of how
+  // the rolls are grouped. Done before the messageConfig step so it doesn't depend
+  // on the (throwaway) message config such a module hands dnd5e.
+  builtConfig.options ??= {};
+  builtConfig.options[MODULE_ID] = { parts };
+
+  // Message-level enrichment for the message dnd5e itself creates (the standard
+  // path): the per-roll parts plus the rollType override / profMultiplier / ability.
+  // Needs the messageConfig linked at preRoll — absent for a re-homed roll, where the
+  // roll.options above already carries the breakdown.
+  const messageConfig = messageConfigByProcess.get(rollConfig);
+  if (!messageConfig) return;
 
   // Preserve rolls already captured for other indices in the same message.
   const existing = getFlag(messageConfig).rolls;
@@ -97,6 +110,7 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   const patch: Record<string, unknown> = { rolls: rollsList };
   if (ability) patch.ability = ability;
 
+  const rollType = rollTypeFromConfig(messageConfig);
   if (rollType) {
     const profMul = proficiencyMultiplier(rollConfig, rollType, ability);
     if (profMul !== undefined) patch.profMultiplier = profMul;
