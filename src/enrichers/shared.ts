@@ -23,7 +23,11 @@ export type Enricher = {
 
 export type EnrichedPart = { source: string; value: number };
 
-export type BuiltRollConfig = { parts?: unknown; data?: unknown };
+export type BuiltRollConfig = {
+  parts?: unknown;
+  data?: unknown;
+  options?: Record<string, unknown>;
+};
 
 export type RollConfig = {
   ability?: string;
