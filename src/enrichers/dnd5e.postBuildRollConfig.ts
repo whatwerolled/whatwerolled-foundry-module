@@ -36,7 +36,10 @@ function capturePartValues(
     try {
       const replaced = RollGlobal.replaceFormulaData(raw, (data ?? {}) as Record<string, unknown>);
       const value = RollGlobal.safeEval(replaced);
-      if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
+      // Keep zero-valued parts: dnd5e leaves them in the formula (e.g. @cover on a
+      // Dexterity save with no cover → +0), so the backend needs the source to
+      // resolve those terms rather than showing an unlabeled +0.
+      if (typeof value === "number" && Number.isFinite(value)) {
         out.push({ source: normalizeSource(raw, ability), value });
       }
     } catch {
