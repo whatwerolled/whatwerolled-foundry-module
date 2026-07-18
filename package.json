@@ -1,6 +1,6 @@
 {
   "name": "whatwerolled-foundry-module",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "What We Rolled — Foundry VTT module that records your table's chat rolls for your What We Rolled dashboard.",
   "license": "MIT",
   "private": true,

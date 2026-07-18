@@ -3,6 +3,13 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.3.0
+
+**Character portraits now appear on your roll cards.** Foundry stores each portrait as a
+path on your own computer or network, which whatwerolled.com couldn't reach — so cards fell
+back to a plain initial, especially for self-hosted games. Each roll now sends a small copy
+of the roller's portrait (or an NPC token's own art) to your campaign so it shows on the card.
+
 ## 0.2.0
 
 **Now fully supports [Ready Set Roll (Reforged)](https://foundryvtt.com/packages/rsreforged).**
