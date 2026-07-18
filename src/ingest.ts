@@ -16,7 +16,6 @@ export async function postEvent(event: MessageEvent): Promise<void> {
         Authorization: `Bearer ${campaignId}`,
       },
       body: JSON.stringify(event),
-      keepalive: true,
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

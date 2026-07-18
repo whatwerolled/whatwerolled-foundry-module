@@ -27,6 +27,8 @@ export type ActorInfo = {
   token: TokenInfo | null;
 };
 
+export type ImageEntry = { dataBase64: string } | { sourceUrl: string };
+
 type Visibility = {
   whisper: string[];
   blind: boolean;
@@ -65,4 +67,5 @@ export type MessageEvent = {
   eventType: MessageEventType;
   messageId: string;
   collectedData: CollectedData | null;
+  images?: { actor?: ImageEntry };
 };

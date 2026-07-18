@@ -2,6 +2,13 @@ import { CAMPAIGN_ID_SETTINGS_KEY, MODULE_ID } from "./constants";
 import { registerEnrichers } from "./enrichers";
 import { buildEvent, hasRolls, MessageEventType } from "./payload";
 import { postEvent } from "./ingest";
+import { attachActorImage } from "./image-sync";
+
+async function collect(type: MessageEventType, message: ChatMessage): Promise<void> {
+  const event = buildEvent(type, message);
+  if (type !== MessageEventType.Deleted) await attachActorImage(event, message);
+  await postEvent(event);
+}
 
 Hooks.once("init", () => {
   game.settings!.register(MODULE_ID, CAMPAIGN_ID_SETTINGS_KEY, {
@@ -18,14 +25,14 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
   Hooks.on("createChatMessage", (message) => {
     if (!hasRolls(message)) return;
-    void postEvent(buildEvent(MessageEventType.Created, message));
+    void collect(MessageEventType.Created, message);
   });
   Hooks.on("updateChatMessage", (message) => {
     if (!hasRolls(message)) return;
-    void postEvent(buildEvent(MessageEventType.Updated, message));
+    void collect(MessageEventType.Updated, message);
   });
   Hooks.on("deleteChatMessage", (message) => {
     if (!hasRolls(message)) return;
-    void postEvent(buildEvent(MessageEventType.Deleted, message));
+    void collect(MessageEventType.Deleted, message);
   });
 });
