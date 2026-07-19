@@ -3,6 +3,10 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.4.0
+
+**Now works on Foundry VTT v13** (previously v14 only).
+
 ## 0.3.0
 
 **Character portraits now appear on your roll cards.** Foundry stores each portrait as a

@@ -3,11 +3,11 @@
   "id": "whatwerolled",
   "title": "What We Rolled",
   "description": "Collects every roll from your Foundry game, so you can look back on all of them — your campaign, in numbers.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "authors": [{ "name": "Oleksii Siryi" }],
   "compatibility": {
-    "minimum": "14",
+    "minimum": "13",
     "verified": "14.364"
   },
   "relationships": {
