@@ -108,8 +108,9 @@ is sent until you set a Campaign ID, and clearing it stops sending at any time. 
 
 ## Early access
 
-What We Rolled is in early, active development. It's built for D&D 5e today, with
-more systems and roll-module support landing every release.
+What We Rolled is in early, active development. It's built for D&D 5e today — most
+common setups already work — with more systems and roll-module support landing every
+release.
 
 ## Support & feedback
 
