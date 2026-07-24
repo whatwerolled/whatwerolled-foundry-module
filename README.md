@@ -106,8 +106,6 @@ is sent until you set a Campaign ID, and clearing it stops sending at any time. 
 | **Foundry VTT** | 13      | 14.364   |
 | **D&D 5e**      | 5       | 5.3.3    |
 
-D&D 5e for now.
-
 ## Early access
 
 What We Rolled is in early, active development. It's built for D&D 5e today, with
