@@ -21,8 +21,12 @@ numbers.
 ## How it works
 
 1. **Install the module** — in Foundry's **Add-on Modules** tab, click **Install
-   Module**, search **What We Rolled**, and enable it in your world.
-   ([Package page](https://foundryvtt.com/packages/whatwerolled))
+   Module** and search **What We Rolled**. Or paste the manifest URL into the field
+   at the bottom of that dialog:
+   ```
+   https://github.com/whatwerolled/whatwerolled-foundry-module/releases/latest/download/module.json
+   ```
+   Then enable it in your world. ([Package page](https://foundryvtt.com/packages/whatwerolled))
 2. **Link your campaign** — copy your Campaign ID from your
    [What We Rolled dashboard](https://app.whatwerolled.com) and paste it into
    **Game Settings → Configure Settings → What We Rolled** in Foundry.
@@ -94,11 +98,12 @@ What We Rolled captures ordinary rolls and rolls made through popular roll helpe
 
 ## Your data
 
-What We Rolled only sends **roll data** — the roll itself, who rolled it, which
-character, and your world and system names. It **never** sends your chat, notes, or
-anything that isn't a roll. Nothing is sent until you set a Campaign ID, and clearing
-it stops sending at any time. See **[Privacy & Data](./PRIVACY.md)** for the full
-list.
+What We Rolled only sends **roll data** — the roll itself (formula, dice, result),
+who rolled it (player name and avatar) and which character, your world and game
+system (and their versions), whether the roll was whispered or blind, and when it
+happened. It **never** sends your chat, notes, or anything that isn't a roll. Nothing
+is sent until you set a Campaign ID, and clearing it stops sending at any time. See
+**[Privacy & Data](./PRIVACY.md)** for the full list.
 
 ---
 
