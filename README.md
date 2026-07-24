@@ -40,10 +40,9 @@ numbers.
 ### 📜 Every roll, kept
 
 Every roll at your table lands in one place, automatically — no per-player setup.
-Each one arrives with every detail intact: the dice, advantage and disadvantage, the
-full breakdown of every bonus (proficiency, expertise, magic items, situational), who
-was targeted, damage by type, healing, crits, and death saves. Delete a roll's
-message in Foundry and it drops out of your history too.
+Each keeps its full detail — the dice, every bonus in the breakdown, targets, crits,
+healing, death saves — shown just as it happened. Delete a roll's message in Foundry
+and it drops out of your history too.
 
 <!-- SCREENSHOT: the roll history feed with a few rich cards + a breakdown popover open -->
 
@@ -87,9 +86,9 @@ ended the boss — and see it land.
 
 What We Rolled captures ordinary rolls and rolls made through popular roll helpers:
 
-- **Ready Set Roll (Reforged)** — fully supported, with each roll's full breakdown.
-- **Ready Set Roll (D&D 5e)** on Foundry v13 — captured.
-- **Midi-QOL** — in progress.
+- **[Ready Set Roll (Reforged)](https://foundryvtt.com/packages/rsreforged)** — fully supported, with each roll's full breakdown.
+- **[Ready Set Roll (D&D 5e)](https://foundryvtt.com/packages/ready-set-roll-5e)** on Foundry v13 — captured.
+- **[Midi-QOL](https://foundryvtt.com/packages/midi-qol)** — in progress.
 
 **Using a roll module we don't list yet?** Tell us and we'll add it — see
 [Support & feedback](#support--feedback) below.
@@ -118,9 +117,8 @@ D&D 5e for now.
 
 ## Early access
 
-What We Rolled is in early, active development. Where it's headed: every game system
-and every roll-modifying module supported, each roll captured faithfully. Most common
-setups already work, and more coverage lands every release.
+What We Rolled is in early, active development. It's built for D&D 5e today, with
+more systems and roll-module support landing every release.
 
 ## Support & feedback
 
