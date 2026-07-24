@@ -58,27 +58,20 @@ the expected 10.5. All of it updates as your campaign grows.
 
 ![Campaign analytics](docs/media/analytics.png)
 
-### 🗓️ Sessions
+### ▶️ Sessions, synced to your recording
 
-Your campaign is made of game nights. Mark one as a **session** and What We Rolled
-shows just that evening — only the rolls from that window, with **stats scoped to
-that night**. Look back on any single session on its own, instead of the whole
-campaign at once.
+Your campaign is made of game nights. Mark one as a **session** to see just that
+evening — its rolls and **stats scoped to that night**, not the whole campaign at
+once.
 
-<!-- SCREENSHOT: sessions list + a single-session stats view -->
+Attach the game's **YouTube recording** and the session comes alive: rolls sit beside
+the video like a live chat, **click a roll to jump the video to that moment**, and as
+it plays the rolls scroll to keep up. Relive the crit that ended the boss — and see it
+land.
 
-![Sessions](docs/media/sessions.png)
+<!-- GIF: session list → open a session → rolls beside the video → click a roll → video seeks. See docs/module-page-media.md -->
 
-### ▶️ Roll along with the recording
-
-Recorded your session? Attach the **YouTube video** and watch it with your rolls
-beside it, like a live chat. **Click any roll to jump the video to that exact
-moment**, and as the video plays the rolls scroll to keep up. Relive the crit that
-ended the boss — and see it land.
-
-<!-- GIF: video on the left, rolls scrolling on the right, a click on a roll seeking the video -->
-
-![Roll-synced playback](docs/media/video-sync.gif)
+![Sessions with synced playback](docs/media/sessions-video.gif)
 
 ---
 
