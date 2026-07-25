@@ -10,6 +10,8 @@ numbers.
 ![Foundry v13+](https://img.shields.io/badge/Foundry-v13%2B-informational)
 ![dnd5e v5+](https://img.shields.io/badge/dnd5e-v5%2B-informational)
 
+![What We Rolled in action](media/hero.gif)
+
 **🌐 [whatwerolled.com](https://whatwerolled.com) · 🎲 [Open the app](https://app.whatwerolled.com)**
 
 ---
