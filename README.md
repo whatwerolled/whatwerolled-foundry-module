@@ -10,10 +10,6 @@ numbers.
 ![Foundry v13+](https://img.shields.io/badge/Foundry-v13%2B-informational)
 ![dnd5e v5+](https://img.shields.io/badge/dnd5e-v5%2B-informational)
 
-<!-- HERO GIF: a roll happens in Foundry → the card appears in the What We Rolled web app. This is the whole pitch in 2 seconds. -->
-
-![What We Rolled in action](docs/media/hero.gif)
-
 **🌐 [whatwerolled.com](https://whatwerolled.com) · 🎲 [Open the app](https://app.whatwerolled.com)**
 
 ---
@@ -46,7 +42,7 @@ and it drops out of your history too.
 
 <!-- SCREENSHOT: the roll history feed with a few rich cards + a breakdown popover open -->
 
-![Roll history](docs/media/history.png)
+![Roll history](media/history.png)
 
 ### 📊 Campaign analytics
 
@@ -56,7 +52,7 @@ the expected 10.5. All of it updates as your campaign grows.
 
 <!-- SCREENSHOT: the analytics page — hero stat tiles + a couple of the signature charts -->
 
-![Campaign analytics](docs/media/analytics.png)
+![Campaign analytics](media/analytics.png)
 
 ### ▶️ Sessions, synced to your recording
 
@@ -68,10 +64,6 @@ Attach the game's **YouTube recording** and the session comes alive: rolls sit b
 the video like a live chat, **click a roll to jump the video to that moment**, and as
 it plays the rolls scroll to keep up. Relive the crit that ended the boss — and see it
 land.
-
-<!-- GIF: session list → open a session → rolls beside the video → click a roll → video seeks. See docs/module-page-media.md -->
-
-![Sessions with synced playback](docs/media/sessions-video.gif)
 
 ---
 
