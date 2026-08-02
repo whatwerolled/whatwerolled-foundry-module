@@ -101,6 +101,7 @@ function buildCollectedData(message: ChatMessage): CollectedData {
     },
     world: worldOf(),
     system: systemOf(),
+    module: { version: game?.modules?.get(MODULE_ID)?.version ?? "" },
     flavor: source.flavor ?? "",
     flags: (source.flags ?? {}) as CollectedData["flags"],
     rolls: (source.rolls ?? []).map((r) => JSON.parse(r) as Record<string, unknown>),

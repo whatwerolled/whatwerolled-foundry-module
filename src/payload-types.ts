@@ -45,6 +45,10 @@ export type SystemInfo = {
   version: string;
 };
 
+export type ModuleInfo = {
+  version: string;
+};
+
 // What the collector mirrors off the ChatMessage. dnd5e/core flags pass through
 // untouched alongside our own `whatwerolled` enrichment flag, so `flags` stays a
 // loose bag — the backend interprets it.
@@ -55,6 +59,7 @@ export type CollectedData = {
   visibility: Visibility;
   world: WorldInfo;
   system: SystemInfo;
+  module: ModuleInfo;
   flavor: string;
   flags: Record<string, unknown>;
   rolls: Record<string, unknown>[];
