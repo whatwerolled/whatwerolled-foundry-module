@@ -3,7 +3,7 @@
   "id": "whatwerolled",
   "title": "What We Rolled",
   "description": "Collects every roll from your Foundry game, so you can look back on all of them — your campaign, in numbers.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "authors": [{ "name": "Oleksii Siryi" }],
   "compatibility": {
@@ -16,7 +16,9 @@
         "id": "dnd5e",
         "type": "system",
         "compatibility": { "minimum": "5" }
-      }
+      },
+      { "id": "pf2e", "type": "system" },
+      { "id": "sf2e", "type": "system" }
     ]
   },
   "esmodules": ["scripts/module.js"],

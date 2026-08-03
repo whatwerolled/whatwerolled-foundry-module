@@ -3,6 +3,10 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.5.0
+
+**What We Rolled now works with Pathfinder 2e and Starfinder 2e.**
+
 ## 0.4.0
 
 **Now works on Foundry VTT v13** (previously v14 only).
