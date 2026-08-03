@@ -9,6 +9,8 @@ numbers.
 
 ![Foundry v13+](https://img.shields.io/badge/Foundry-v13%2B-informational)
 ![dnd5e v5+](https://img.shields.io/badge/dnd5e-v5%2B-informational)
+![pf2e v8+](https://img.shields.io/badge/pf2e-v8%2B-informational)
+![sf2e v1+](https://img.shields.io/badge/sf2e-v1%2B-informational)
 
 ![What We Rolled in action](media/hero.gif)
 
@@ -95,16 +97,18 @@ is sent until you set a Campaign ID, and clearing it stops sending at any time. 
 
 ## Compatibility
 
-|                 | Minimum | Verified |
-| --------------- | ------- | -------- |
-| **Foundry VTT** | 13      | 14.364   |
-| **D&D 5e**      | 5       | 5.3.3    |
+|                   | Minimum | Verified |
+| ----------------- | ------- | -------- |
+| **Foundry VTT**   | 13      | 14.364   |
+| **D&D 5e**        | 5       | 5.3.3    |
+| **Pathfinder 2e** | 8       | 8.4.0    |
+| **Starfinder 2e** | 1       | 1.4.0    |
 
 ## Early access
 
-What We Rolled is in early, active development. It's built for D&D 5e today — most
-common setups already work — with more systems and roll-module support landing every
-release.
+What We Rolled is in early, active development. It supports D&D 5e, Pathfinder 2e,
+and Starfinder 2e today — most common setups already work — with more systems and
+roll-module support landing every release.
 
 ## Support & feedback
 
