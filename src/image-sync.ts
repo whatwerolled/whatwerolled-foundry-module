@@ -3,7 +3,7 @@ import type { MessageEvent } from "./payload-types";
 
 const cache = new Map<string, string | null>();
 const CORE_DEFAULT = "icons/svg/mystery-man.svg";
-const MAX_DIM = 256;
+const MAX_DIM = 512;
 const TIMEOUT_MS = 4000;
 const VIDEO_EXT = /\.(webm|mp4|m4v|ogv)$/i;
 
