@@ -19,6 +19,7 @@ const SUPPORTED_ROLL_TYPES: ReadonlySet<string> = new Set([
   RollType.Death,
   RollType.Attack,
   RollType.Damage,
+  RollType.Healing,
 ]);
 
 function attackInfo(activity: AttackActivity): Record<string, unknown> {
@@ -61,9 +62,13 @@ function onPreRoll(rollConfig: RollConfig, _dialog: unknown, messageConfig: Mess
 
   // Attack metadata the frontend needs to distinguish melee/ranged/spell/unarmed
   // and label the weapon. uuid/type are already in flags.dnd5e.item.
-  // Attack and damage both ride an activity that knows its item; reference it in
-  // the shared `items` map. Attack adds its melee/ranged/spell metadata on top.
-  if (rollType === RollType.Attack || rollType === RollType.Damage) {
+  // Attack, damage and healing all ride an activity that knows its item; reference
+  // it in the shared `items` map. Attack adds its melee/ranged/spell metadata on top.
+  if (
+    rollType === RollType.Attack ||
+    rollType === RollType.Damage ||
+    rollType === RollType.Healing
+  ) {
     const activity = rollConfig.subject as unknown as AttackActivity;
     if (rollType === RollType.Attack) mergeFlag(messageConfig, { attack: attackInfo(activity) });
     mergeItem(messageConfig, activity.item);
