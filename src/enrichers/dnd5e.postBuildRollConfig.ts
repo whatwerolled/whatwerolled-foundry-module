@@ -20,6 +20,60 @@ function normalizeSource(raw: string, ability: string | undefined): string {
   return trimmed;
 }
 
+type ParseNode = { class: string; operator?: string; term?: string; number?: number };
+
+const BARE_REFERENCE = /^\s*@[\w.]+\s*$/;
+const NUMERIC_LITERAL = /^[+-]?\d+(?:\.\d+)?$/;
+
+/**
+ * Cut a roll part into its additive segments, reading structure from Foundry's own
+ * roll grammar rather than guessing at the string.
+ *
+ * D20 rolls hand over bare references (`@mod`, `@prof`), but damage and healing
+ * arrive welded into one part — `2d8 + @mod`, `1 + @mod`, `@scale.monk.die + @mod`
+ * — because dnd5e builds that string from the item's damage field. We parse WITHOUT
+ * resolving data, which `Roll.parse` always does, so each `@`-reference survives as
+ * a term instead of having already collapsed into a number.
+ */
+function additiveSegments(part: string): { sign: number; nodes: ParseNode[] }[] {
+  const grammar = (
+    globalThis as { foundry?: { dice?: { RollGrammar?: { parse(f: string): unknown } } } }
+  ).foundry?.dice?.RollGrammar;
+  const parser = (
+    globalThis as { CONFIG?: { Dice?: { parser?: { flattenTree(n: unknown): ParseNode[] } } } }
+  ).CONFIG?.Dice?.parser;
+  // Without the parser we can still handle the common shape — a part that is
+  // nothing but a reference — so a system that replaces it costs us the welded
+  // damage bonuses rather than every label on every roll type.
+  if (!grammar || !parser) {
+    return BARE_REFERENCE.test(part)
+      ? [{ sign: 1, nodes: [{ class: "StringTerm", term: part.trim() }] }]
+      : [];
+  }
+  const segments = [{ sign: 1, nodes: [] as ParseNode[] }];
+  for (const node of parser.flattenTree(grammar.parse(part))) {
+    if (node.class === "OperatorTerm" && (node.operator === "+" || node.operator === "-")) {
+      segments.push({ sign: node.operator === "-" ? -1 : 1, nodes: [] });
+    } else segments[segments.length - 1].nodes.push(node);
+  }
+  return segments;
+}
+
+/**
+ * The reference a segment consists of, or nothing.
+ *
+ * A segment must BE the reference — one term, nothing beside it. Foundry never
+ * folds an expression into a single term (`2 * @mod` stays `2`, `*`, `3`), and the
+ * backend pairs a source with a term by its value, so attributing a product to the
+ * reference inside it would label the multiplier and leave the real modifier bare.
+ * Dice, parentheticals and function calls are excluded by the same rule.
+ */
+function referencedTerm(nodes: ParseNode[]): string | undefined {
+  if (nodes.length !== 1) return undefined;
+  const [node] = nodes;
+  return node.class === "StringTerm" && node.term?.startsWith("@") ? node.term : undefined;
+}
+
 function capturePartValues(
   parts: unknown,
   data: unknown,
@@ -31,19 +85,31 @@ function capturePartValues(
   const out: EnrichedPart[] = [];
   for (const raw of parts) {
     if (typeof raw !== "string") continue;
-    // Skip pure dice tokens (`1d20`, `2d6kh1`, …) — already in the persisted Roll.
-    if (/^\s*\d*d\d+(\s|$|[+\-*/])/i.test(raw)) continue;
+    let segments: { sign: number; nodes: ParseNode[] }[];
     try {
-      const replaced = RollGlobal.replaceFormulaData(raw, (data ?? {}) as Record<string, unknown>);
-      const value = RollGlobal.safeEval(replaced);
-      // Keep zero-valued parts: dnd5e leaves them in the formula (e.g. @cover on a
-      // Dexterity save with no cover → +0), so the backend needs the source to
-      // resolve those terms rather than showing an unlabeled +0.
-      if (typeof value === "number" && Number.isFinite(value)) {
-        out.push({ source: normalizeSource(raw, ability), value });
-      }
+      segments = additiveSegments(raw);
     } catch {
-      // Unevaluable formula — drop silently and keep going.
+      continue; // Unparseable formula — nothing to attribute.
+    }
+    for (const { sign, nodes } of segments) {
+      const source = referencedTerm(nodes);
+      if (!source) continue;
+      try {
+        const replaced = RollGlobal.replaceFormulaData(
+          source,
+          (data ?? {}) as Record<string, unknown>,
+        ).trim();
+        // A reference can resolve to an expression of its own (`@initiativeBonus`
+        // becoming "6 * 2", `@prof` becoming "1d8"), which the Roll splits into
+        // separate terms again — so only a plain number can be paired with one.
+        // Zero counts: dnd5e leaves conditional add-ons in the formula (`@cover` on
+        // a Dexterity save with no cover → +0) and the backend needs the source to
+        // recognise those rather than showing an unlabeled +0.
+        if (!NUMERIC_LITERAL.test(replaced)) continue;
+        out.push({ source: normalizeSource(source, ability), value: sign * Number(replaced) });
+      } catch {
+        // Unresolvable reference — drop silently and keep going.
+      }
     }
   }
   return out;

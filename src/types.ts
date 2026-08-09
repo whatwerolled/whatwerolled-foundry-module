@@ -14,6 +14,12 @@ export enum RollType {
   Attack = "attack",
   Damage = "damage",
   /**
+   * Heal activities roll a DamageRoll, but dnd5e overwrites the message flag to
+   * `"healing"` — so the enricher has to recognise it as its own type or it
+   * never sees healing rolls at all.
+   */
+  Healing = "healing",
+  /**
    * dnd5e tags concentration as a plain `"save"`; only the enricher knows the
    * truth (at roll time), so it writes this rollType into the cs flag directly.
    */
