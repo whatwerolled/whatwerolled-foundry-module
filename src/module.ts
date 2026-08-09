@@ -1,5 +1,6 @@
 import { CAMPAIGN_ID_SETTINGS_KEY, MODULE_ID } from "./constants";
 import { registerEnrichers } from "./enrichers";
+import { captureRollTableDraws } from "./roll-table";
 import { buildEvent, hasRolls, MessageEventType } from "./payload";
 import { postEvent } from "./ingest";
 import { attachActorImage } from "./image-sync";
@@ -20,6 +21,7 @@ Hooks.once("init", () => {
     default: "",
   });
   registerEnrichers();
+  captureRollTableDraws();
 });
 
 Hooks.once("ready", () => {
