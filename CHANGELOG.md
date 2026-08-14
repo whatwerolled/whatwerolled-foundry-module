@@ -3,6 +3,16 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.6.0
+
+**Roll table draws now show what came up** — the entry and the table it came from.
+
+**Healing rolls now explain their bonus**, the way attacks and checks already do.
+
+**Bonuses that scale with a class feature or your level are now labelled**, not left as a bare number.
+
+**Sharper character portraits.**
+
 ## 0.5.0
 
 **What We Rolled now works with Pathfinder 2e and Starfinder 2e.**
