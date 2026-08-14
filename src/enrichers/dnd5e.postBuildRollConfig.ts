@@ -22,7 +22,8 @@ function normalizeSource(raw: string, ability: string | undefined): string {
 
 type ParseNode = { class: string; operator?: string; term?: string; number?: number };
 
-const BARE_REFERENCE = /^\s*@[\w.]+\s*$/;
+// Foundry resolves a reference as `@[-.\w]+`, hyphen included.
+const WHOLE_REFERENCE = /^\s*([+-]?)\s*(@[-.\w]+)\s*$/;
 const NUMERIC_LITERAL = /^[+-]?\d+(?:\.\d+)?$/;
 
 /**
@@ -36,20 +37,27 @@ const NUMERIC_LITERAL = /^[+-]?\d+(?:\.\d+)?$/;
  * a term instead of having already collapsed into a number.
  */
 function additiveSegments(part: string): { sign: number; nodes: ParseNode[] }[] {
+  // A part that IS one reference is taken as such, without the grammar. That's not
+  // only a shortcut: the grammar treats `-` as an operator, so a hyphenated
+  // reference would split into two halves that resolve to nothing — and real
+  // content depends on them (a Barbarian's Rage adds `@scale.barbarian.rage-damage`
+  // to its damage). It doubles as the fallback if a system replaces the parser.
+  const whole = WHOLE_REFERENCE.exec(part);
+  if (whole) {
+    return [
+      {
+        sign: whole[1] === "-" ? -1 : 1,
+        nodes: [{ class: "StringTerm", term: whole[2] }],
+      },
+    ];
+  }
   const grammar = (
     globalThis as { foundry?: { dice?: { RollGrammar?: { parse(f: string): unknown } } } }
   ).foundry?.dice?.RollGrammar;
   const parser = (
     globalThis as { CONFIG?: { Dice?: { parser?: { flattenTree(n: unknown): ParseNode[] } } } }
   ).CONFIG?.Dice?.parser;
-  // Without the parser we can still handle the common shape — a part that is
-  // nothing but a reference — so a system that replaces it costs us the welded
-  // damage bonuses rather than every label on every roll type.
-  if (!grammar || !parser) {
-    return BARE_REFERENCE.test(part)
-      ? [{ sign: 1, nodes: [{ class: "StringTerm", term: part.trim() }] }]
-      : [];
-  }
+  if (!grammar || !parser) return [];
   const segments = [{ sign: 1, nodes: [] as ParseNode[] }];
   for (const node of parser.flattenTree(grammar.parse(part))) {
     if (node.class === "OperatorTerm" && (node.operator === "+" || node.operator === "-")) {
