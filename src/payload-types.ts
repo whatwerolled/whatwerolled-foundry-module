@@ -14,10 +14,13 @@ export type Author = {
 
 // The specific token instance that rolled — present when the speaker is a token.
 // `id` is the unique per-token key; `name` is the token's display name (e.g.
-// "Miserable Adult Red Dragon"). Distinguishes several tokens of one actor.
+// "Miserable Adult Red Dragon"). `linked` is Foundry's `token.actorLink` — the
+// backend needs it to decide whether the actor or the token is the identity;
+// absent when the token is already gone.
 type TokenInfo = {
   id: string;
   name: string;
+  linked?: boolean;
 };
 
 export type ActorInfo = {
