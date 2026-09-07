@@ -56,8 +56,21 @@ function actorOf(message: ChatMessage): ActorInfo | null {
     id,
     name: actor?.name ?? "",
     image: absoluteUrl(actor?.img),
-    token: tokenId ? { id: tokenId, name: message.speaker?.alias ?? "" } : null,
+    token: tokenId
+      ? {
+          id: tokenId,
+          name: message.speaker?.alias ?? "",
+          ...linkedOf(message.speaker?.scene ?? null, tokenId),
+        }
+      : null,
   };
+}
+
+/** `{ linked }` for a token still on its scene, or `{}` when it is gone. */
+function linkedOf(sceneId: string | null, tokenId: string): { linked?: boolean } {
+  if (!sceneId) return {};
+  const token = game?.scenes?.get(sceneId)?.tokens?.get(tokenId);
+  return token ? { linked: !!token.actorLink } : {};
 }
 
 function worldOf(): WorldInfo {
