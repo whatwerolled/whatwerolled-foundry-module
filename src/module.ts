@@ -5,6 +5,7 @@ import { buildEvent, hasRolls, MessageEventType } from "./payload";
 import { postEvent } from "./ingest";
 import { attachActorImage } from "./image-sync";
 import { attachItemDescriptions } from "./item-details";
+import { captureCombats } from "./combat";
 
 async function collect(type: MessageEventType, message: ChatMessage): Promise<void> {
   if (!game.settings!.get(MODULE_ID, Setting.CollectRolls)) return;
@@ -49,11 +50,17 @@ Hooks.once("init", () => {
     "Collect rolls",
     "Send the rolls made in this world to your campaign. Turn this off and no roll leaves the table.",
   );
+  registerSwitch(
+    Setting.CollectEncounters,
+    "Collect combat encounters",
+    "Send each encounter: who took part, the order they acted in, and how it played out.",
+  );
   registerEnrichers();
   captureRollTableDraws();
 });
 
 Hooks.once("ready", () => {
+  captureCombats();
   Hooks.on("createChatMessage", (message) => {
     if (!hasRolls(message)) return;
     void collect(MessageEventType.Created, message);
