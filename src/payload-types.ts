@@ -83,6 +83,61 @@ export type CollectedData = {
   rolls: Record<string, unknown>[];
 };
 
+/**
+ * One combatant, as the encounter saw it.
+ *
+ * `name` is the combatant's own display name (a token's, usually), which is what the
+ * table read off the tracker. `actorId` / `tokenId` / `linked` are the same identity
+ * the roll payload carries, so a combatant lines up with the character who rolled.
+ * `group` is Foundry v14's combatant grouping (several tokens acting on one
+ * initiative), by group id.
+ */
+export type CombatantInfo = {
+  id: string;
+  name: string;
+  img: string;
+  actorId: string | null;
+  tokenId: string | null;
+  linked?: boolean;
+  initiative: number | null;
+  defeated: boolean;
+  hidden: boolean;
+  group?: string;
+};
+
+/**
+ * An encounter as it stands right now. Sent whole with every combat event, so the
+ * backend can record an encounter it never saw begin — a GM who turns collection on
+ * mid-fight, or a module release landing mid-session.
+ *
+ * `foundryCreatedAt` is the encounter's own creation time in the world; the backend
+ * keeps its own arrival time separately, since the two answer different questions.
+ * `scene` travels for context and is deliberately not something the backend stores.
+ */
+export type CombatInfo = {
+  id: string;
+  name: string;
+  active: boolean;
+  round: number;
+  turn: number | null;
+  started: boolean;
+  foundryCreatedAt: Date | null;
+  scene: { id: string; name: string } | null;
+  combatants: CombatantInfo[];
+};
+
+export enum CombatEventType {
+  Created = "created",
+  Updated = "updated",
+  Ended = "ended",
+}
+
+export type CombatEvent = {
+  eventType: CombatEventType;
+  combatId: string;
+  combat: CombatInfo;
+};
+
 // Wire envelope: identity + what happened. `collectedData` is null for deletions
 // (the backend only needs the id to drop the row). The campaign is identified by
 // the Bearer token, not carried in the body.

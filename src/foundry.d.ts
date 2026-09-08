@@ -6,6 +6,7 @@ declare global {
   interface SettingConfig {
     "whatwerolled.campaignId": string;
     "whatwerolled.collectRolls": boolean;
+    "whatwerolled.collectEncounters": boolean;
   }
 }
 
