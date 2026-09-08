@@ -1,5 +1,5 @@
-import { CAMPAIGN_ID_SETTINGS_KEY, MODULE_ID } from "./constants";
-import type { MessageEvent } from "./payload-types";
+import { MODULE_ID, Setting } from "./constants";
+import type { ImageEntry, Images, MessageEvent } from "./payload-types";
 
 const cache = new Map<string, string | null>();
 const CORE_DEFAULT = "icons/svg/mystery-man.svg";
@@ -9,24 +9,32 @@ const VIDEO_EXT = /\.(webm|mp4|m4v|ogv)$/i;
 
 type Loose = Record<string, unknown> & { texture?: { src?: string }; img?: string };
 
-// Unlinked token (NPC): its own art. Linked / PC / no token: the actor portrait.
-function resolveAvatarSource(message: ChatMessage): string | null {
-  const speaker = message.speaker as { scene?: string; actor?: string; token?: string };
+const usable = (src: string | undefined): src is string =>
+  !!src && !src.includes("*") && src !== CORE_DEFAULT;
+
+function actorImageSource(message: ChatMessage): string | null {
+  const speaker = message.speaker as { actor?: string };
   const actor = speaker?.actor
     ? (game.actors?.get(speaker.actor) as unknown as Loose | undefined)
     : undefined;
-  const tokenDoc =
-    speaker?.scene && speaker?.token
-      ? (game.scenes?.get(speaker.scene)?.tokens?.get(speaker.token) as unknown as
-          | (Loose & { actorLink?: boolean })
-          | undefined)
-      : undefined;
   const proto = (actor?.prototypeToken as { texture?: { src?: string } } | undefined)?.texture?.src;
-  const candidates =
-    tokenDoc && !tokenDoc.actorLink
-      ? [tokenDoc.texture?.src, proto, actor?.img]
-      : [actor?.img, proto];
-  return candidates.find((s): s is string => !!s && !s.includes("*") && s !== CORE_DEFAULT) ?? null;
+  return [actor?.img, proto].find(usable) ?? null;
+}
+
+/**
+ * What stood on the table for this roll — the token's own art.
+ *
+ * Not the same question as the portrait: an unlinked token carries its own image, so
+ * six goblins off one template can each look different. Null when no token spoke, or
+ * when it has since been removed and its art is no longer knowable.
+ */
+function tokenImageSource(message: ChatMessage): string | null {
+  const speaker = message.speaker as { scene?: string; token?: string };
+  if (!speaker?.scene || !speaker?.token) return null;
+  const token = game.scenes?.get(speaker.scene)?.tokens?.get(speaker.token) as unknown as
+    | Loose
+    | undefined;
+  return usable(token?.texture?.src) ? token!.texture!.src! : null;
 }
 
 async function bitmapFromVideo(src: string): Promise<ImageBitmap> {
@@ -81,29 +89,79 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(bin);
 }
 
-// Best-effort: attaching an avatar must never throw or hang, so it can't block the roll POST.
+/** A Foundry served from a laptop or a LAN: an address only this table can reach. */
+const PRIVATE_HOST =
+  /^(localhost|127\.|0\.0\.0\.0|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
+
+/** Only successes are remembered: a miss is usually a timeout under load, and caching
+ *  it would degrade every later roll for good. */
+async function entryFor(src: string): Promise<ImageEntry | undefined> {
+  const cached = cache.get(src);
+  if (cached) return { dataBase64: cached };
+  const buf = await compress(src);
+  if (buf) {
+    const encoded = toBase64(buf);
+    cache.set(src, encoded);
+    return { dataBase64: encoded };
+  }
+  // Unreadable here (a video frame that wouldn't decode, a missing file). Pass the
+  // address on only if the backend could actually fetch it — most Foundry worlds are
+  // served from the GM's own machine, where the URL resolves for nobody else.
+  const abs = new URL(src, window.location.origin);
+  return /^https?:$/i.test(abs.protocol) && !PRIVATE_HOST.test(abs.hostname)
+    ? { sourceUrl: abs.href }
+    : undefined;
+}
+
+/** Read off the payload rather than the message: that is where pf2e's own modifier
+ *  sources have been resolved, and each entry already carries the picture's path. */
+async function itemEntries(event: MessageEvent): Promise<Record<string, ImageEntry>> {
+  const out: Record<string, ImageEntry> = {};
+  const items = (
+    event.collectedData?.flags as
+      | Record<string, { items?: Record<string, { img?: string }> } | undefined>
+      | undefined
+  )?.[MODULE_ID]?.items;
+  for (const [id, item] of Object.entries(items ?? {})) {
+    if (!usable(item?.img)) continue;
+    const entry = await entryFor(item.img);
+    if (entry) out[id] = entry;
+  }
+  return out;
+}
+
+/**
+ * Attach the pictures a roll needs: the character's portrait, the token that rolled,
+ * and every involved item's icon.
+ *
+ * Portrait and token art are both sent even when they are the same file — which is
+ * which is what the backend can't work out afterwards, and that matters more than the
+ * duplicate bytes. Each is attached as it succeeds, so one unreadable picture doesn't
+ * take the others with it.
+ */
 export async function attachActorImage(event: MessageEvent, message: ChatMessage): Promise<void> {
   try {
     if (!event.collectedData?.actor) return;
-    const campaignId = game.settings!.get(MODULE_ID, CAMPAIGN_ID_SETTINGS_KEY).trim();
+    const campaignId = game.settings!.get(MODULE_ID, Setting.CampaignId).trim();
     if (!campaignId) return;
 
-    const src = resolveAvatarSource(message);
-    if (!src) return;
+    const images: Images = {};
+    event.images = images;
+    const actorSrc = actorImageSource(message);
+    if (actorSrc) {
+      const entry = await entryFor(actorSrc);
+      if (entry) images.actor = entry;
+    }
+    const tokenSrc = tokenImageSource(message);
+    if (tokenSrc) {
+      const entry = await entryFor(tokenSrc);
+      if (entry) images.token = entry;
+    }
+    const items = await itemEntries(event);
+    if (Object.keys(items).length) images.items = items;
 
-    let encoded = cache.get(src);
-    if (encoded === undefined) {
-      const buf = await compress(src);
-      encoded = buf ? toBase64(buf) : null;
-      cache.set(src, encoded);
-    }
-    if (encoded) {
-      event.images = { actor: { dataBase64: encoded } };
-      return;
-    }
-    const abs = new URL(src, window.location.origin).href;
-    if (/^https?:/i.test(abs)) event.images = { actor: { sourceUrl: abs } };
+    if (!Object.keys(images).length) delete event.images;
   } catch {
-    // avatar is optional — swallow so the roll still POSTs
+    // pictures are optional — swallow so the roll still POSTs
   }
 }

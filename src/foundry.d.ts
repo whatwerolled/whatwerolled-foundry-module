@@ -5,6 +5,7 @@ import "fvtt-types";
 declare global {
   interface SettingConfig {
     "whatwerolled.campaignId": string;
+    "whatwerolled.collectRolls": boolean;
   }
 }
 
