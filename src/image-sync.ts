@@ -1,4 +1,5 @@
 import { MODULE_ID, Setting } from "./constants";
+import { itemEntriesById } from "./registry";
 import type { ImageEntry, Images, MessageEvent } from "./payload-types";
 
 const cache = new Map<string, string | null>();
@@ -89,9 +90,15 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(bin);
 }
 
-/** A Foundry served from a laptop or a LAN: an address only this table can reach. */
+/**
+ * A Foundry served from a laptop or a LAN: an address only this table can reach.
+ *
+ * Includes the name forms, not just the numeric ranges — a GM serving on
+ * `foundry.local` or a bare `gm-pc` is the same unreachable machine, and handing that
+ * address to the backend only produces a fetch nobody can satisfy.
+ */
 const PRIVATE_HOST =
-  /^(localhost|127\.|0\.0\.0\.0|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
+  /^(localhost|[^.]+$|.+\.(local|localdomain|internal|lan|home|home\.arpa)$|127\.|0\.0\.0\.0|169\.254\.|\[::1\]|\[f[cd][0-9a-f]{2}:|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
 
 /** Only successes are remembered: a miss is usually a timeout under load, and caching
  *  it would degrade every later roll for good. */
@@ -117,14 +124,12 @@ async function entryFor(src: string): Promise<ImageEntry | undefined> {
  *  sources have been resolved, and each entry already carries the picture's path. */
 async function itemEntries(event: MessageEvent): Promise<Record<string, ImageEntry>> {
   const out: Record<string, ImageEntry> = {};
-  const items = (
-    event.collectedData?.flags as
-      | Record<string, { items?: Record<string, { img?: string }> } | undefined>
-      | undefined
-  )?.[MODULE_ID]?.items;
-  for (const [id, item] of Object.entries(items ?? {})) {
-    if (!usable(item?.img)) continue;
-    const entry = await entryFor(item.img);
+  // Every scope, not only the message's: a re-homed roll (RSReforged, MIDI) has no
+  // message flag, and reading that alone sent those tables' rolls without any icons.
+  for (const [id, entries] of itemEntriesById(event)) {
+    const img = entries.find((e) => usable(e.img))?.img;
+    if (!img) continue;
+    const entry = await entryFor(img);
     if (entry) out[id] = entry;
   }
   return out;

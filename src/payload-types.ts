@@ -1,9 +1,8 @@
 import type { MessageEventType, UserRole } from "./types";
 
 // The wire shapes the collector builds and sends. The module only *produces*
-// these — it never reads or validates an incoming payload — so plain TS types
-// are enough here. Runtime validation (zod) lives with the consumers (e2e suite
-// and backend), not in the shipped module.
+// these — it never reads or validates an incoming payload — so plain TS types are
+// enough here; runtime validation belongs to whoever receives them.
 
 export type Author = {
   id: string;

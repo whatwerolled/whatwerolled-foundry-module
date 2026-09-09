@@ -46,19 +46,9 @@ export type ItemRef = {
  */
 export type EnrichedPart = { source: string; value: number; from?: string[] };
 
-/** Dice a roll gained from somewhere other than its own formula — an enchantment
- *  adding `2d6`. `effect` names the enchantment, `from` the item ids carrying it. */
-export type DiceSource = {
-  source: string;
-  formula: string;
-  effect?: string;
-  from?: string[];
-};
-
 /** The same, as attribution works them out: the items themselves, before they are
  *  put in the registry and replaced by their ids. */
 export type AttributedPart = Omit<EnrichedPart, "from"> & { from?: ItemRef[] };
-export type AttributedDice = Omit<DiceSource, "from"> & { from?: ItemRef[] };
 
 export type BuiltRollConfig = {
   parts?: unknown;
@@ -73,6 +63,9 @@ export type RollConfig = {
   isConcentration?: boolean;
   /** Chosen in the attack dialog; decides which action-type bonuses apply. */
   attackMode?: string;
+  /** Chosen in the attack dialog: the ammunition item, or its id on an attack. Read
+   *  from the BUILT roll's options — the process config keeps the last one used. */
+  ammunition?: unknown;
   subject?: {
     // An attack/damage roll's subject is the Activity, which owns the actor; a
     // d20 test's subject IS the actor.

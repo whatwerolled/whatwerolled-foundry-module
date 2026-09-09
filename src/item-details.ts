@@ -1,5 +1,6 @@
 import { MODULE_ID } from "./constants";
 import { kindOf } from "./kinds";
+import { itemEntriesById } from "./registry";
 import type { MessageEvent } from "./payload-types";
 
 /**
@@ -63,9 +64,10 @@ function foreignItems(message: ChatMessage): Record<string, ItemEntry> {
   for (const uuid of new Set(uuids)) {
     // `strict: false` or this throws for an embedded document inside a compendium —
     // which is what pf2e writes for a bestiary-granted effect — and a throw here
-    // would take the whole roll down with it. An unresolved uuid, and a compendium
-    // entry that comes back as an index record (`_id`, no `id`), are both fine to
-    // skip: pf2e's own labels still describe the modifier.
+    // would take the whole roll down with it. A compendium uuid comes back as an
+    // index record, which carries `_id` rather than `id`, so both are read; a uuid
+    // that resolves to nothing is skipped, and pf2e's own labels still describe the
+    // modifier.
     const item = foundry.utils.fromUuidSync(uuid, { strict: false }) as ItemLike | null;
     const id = item?.id ?? item?._id;
     if (!item || !id) continue;
@@ -153,7 +155,7 @@ export function itemsForPayload(
 
 /** A whole roll's descriptions are worth a moment, never a wait: enrichment can
  *  fetch compendium documents, and the POST is behind it. */
-const ENRICH_BUDGET_MS = 3000;
+export const ENRICH_BUDGET_MS = 3000;
 
 /** Enough for any item card; a homebrew item can hold an essay, and every roll that
  *  used it would carry the whole thing. */
@@ -172,20 +174,22 @@ export async function attachItemDescriptions(
   event: MessageEvent,
   message: ChatMessage,
 ): Promise<void> {
-  const items = (event.collectedData?.flags as Record<string, OurFlag | undefined> | undefined)?.[
-    MODULE_ID
-  ]?.items;
-  if (!items) return;
+  // Every scope's copy of an item, filled in together: a re-homed roll (RSReforged,
+  // MIDI) carries its own registry and no message flag, so writing only the message's
+  // copy leaves those tables with a bare name.
+  const byId = itemEntriesById(event);
+  if (!byId.size) return;
 
   const enricher = foundry.applications.ux.TextEditor.implementation;
   const flatten = document.createElement("div");
   const deadline = Date.now() + ENRICH_BUDGET_MS;
-  for (const [id, entry] of Object.entries(items)) {
+  for (const [id, entries] of byId) {
     if (Date.now() > deadline) return;
     // A `uuid` is here when the system named the item rather than us, and an id alone
     // can't find those: a compendium item is not on the actor and not in the sidebar.
-    const item = entry.uuid
-      ? ((foundry.utils.fromUuidSync(String(entry.uuid), { strict: false }) as ItemLike | null) ??
+    const uuid = entries.find((e) => e.uuid)?.uuid;
+    const item = uuid
+      ? ((foundry.utils.fromUuidSync(String(uuid), { strict: false }) as ItemLike | null) ??
         undefined)
       : findItem(message, id);
     const raw = descriptionFor(item);
@@ -193,7 +197,7 @@ export async function attachItemDescriptions(
     try {
       flatten.innerHTML = await enricher.enrichHTML(raw, { secrets: false });
       const text = (flatten.textContent ?? "").replace(/\s+/g, " ").trim();
-      if (text) entry.description = text.slice(0, MAX_DESCRIPTION);
+      if (text) for (const entry of entries) entry.description = text.slice(0, MAX_DESCRIPTION);
     } catch {
       // Leave the item without a description rather than send unrendered markup.
     }

@@ -1,5 +1,7 @@
 import { MODULE_ID } from "../constants";
 import { capturePartValues } from "./parts";
+import { attributeFieldParts } from "./dnd5e.attribution";
+import { itemEntries } from "./shared";
 
 type InitiativeConfig = { parts?: unknown; data?: unknown; options?: { fixed?: unknown } } | null;
 type InitiativeActor = {
@@ -59,10 +61,20 @@ function applyInitiativePatch(): void {
         this.system?.attributes?.init?.ability ||
         (CONFIG as { DND5E?: { defaultAbilities?: { initiative?: string } } }).DND5E
           ?.defaultAbilities?.initiative;
-      const parts = capturePartValues(config.parts, config.data, ability);
+      const captured = capturePartValues(config.parts, config.data, ability);
+      // Attribute the same two ways `postBuildRollConfig` does — an initiative bonus
+      // comes from an item as often as any other check does (a Stone of Good Luck
+      // adds to every one), and without this it reads as a bare "check bonus".
+      const parts = attributeFieldParts(captured, this, config.data, { ability });
       if (parts.length) {
+        const items = itemEntries(parts.flatMap((p) => p.from ?? []));
         roll.options ??= {};
-        roll.options[MODULE_ID] = { parts };
+        roll.options[MODULE_ID] = {
+          parts: parts.map(({ from, ...rest }) =>
+            from ? { ...rest, from: from.map((r) => r.id) } : rest,
+          ),
+          ...(Object.keys(items).length ? { items } : {}),
+        };
       }
     } catch {
       // Enrichment is best-effort; never break the roll itself.

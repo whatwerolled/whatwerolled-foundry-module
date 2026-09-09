@@ -5,6 +5,7 @@ import { buildEvent, hasRolls, MessageEventType } from "./payload";
 import { postEvent } from "./ingest";
 import { attachActorImage } from "./image-sync";
 import { attachItemDescriptions } from "./item-details";
+import { attachMasteries } from "./mastery";
 
 async function collect(type: MessageEventType, message: ChatMessage): Promise<void> {
   if (!game.settings!.get(MODULE_ID, Setting.CollectRolls)) return;
@@ -13,12 +14,16 @@ async function collect(type: MessageEventType, message: ChatMessage): Promise<vo
   // compendia, a canvas for the pictures — and any of it can throw on data we have
   // never seen. None of that is worth losing the roll over, so the mirror goes out
   // with whatever was gathered by the time something broke.
+  // One guard each, not one around all three: sharing a guard means whichever throws
+  // first also cancels the ones after it, so a world whose item text won't enrich
+  // would send every roll with no pictures either.
   if (type !== MessageEventType.Deleted) {
-    try {
-      await attachItemDescriptions(event, message);
-      await attachActorImage(event, message);
-    } catch (error) {
-      console.error(`${MODULE_ID} | enrichment failed; sending the roll as-is`, error);
+    for (const attach of [attachItemDescriptions, attachMasteries, attachActorImage]) {
+      try {
+        await attach(event, message);
+      } catch (error) {
+        console.error(`${MODULE_ID} | ${attach.name} failed; sending the roll without it`, error);
+      }
     }
   }
   await postEvent(event);

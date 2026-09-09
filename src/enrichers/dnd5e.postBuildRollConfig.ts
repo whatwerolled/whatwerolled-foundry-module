@@ -4,7 +4,6 @@ import {
   type AttackActivity,
   type BuiltRollConfig,
   type AttributedPart,
-  type DiceSource,
   type EnrichedPart,
   type ItemRef,
   type Enricher,
@@ -22,7 +21,6 @@ import {
   ammunitionRef,
   attributeFieldParts,
   attributeItemParts,
-  diceFromItemEffects,
   castVesselOf,
   rollingItemOf,
 } from "./dnd5e.attribution";
@@ -126,6 +124,19 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
     rollConfig.ability ??
     (rollConfig.subject as unknown as AttackActivity | undefined)?.ability;
 
+  // What the player actually chose in the dialog. dnd5e puts those choices on the
+  // BUILT roll's options (`attack.mjs` _buildAttackConfig) and never writes them back
+  // to the process config, which still holds the item's "last used" ammunition and
+  // attack mode. Reading the process config credited the previous ammunition —
+  // picking +1 Arrows over plain ones named the plain ones as the source of a bonus
+  // they don't grant — and traced a thrown dagger's bonus through its melee field.
+  const chosen = builtConfig.options as { ammunition?: unknown; attackMode?: string } | undefined;
+  const config: RollConfig = {
+    ...rollConfig,
+    ammunition: chosen?.ammunition ?? rollConfig.ammunition,
+    attackMode: chosen?.attackMode ?? rollConfig.attackMode,
+  };
+
   const messageConfig = messageConfigByProcess.get(rollConfig);
   // dnd5e's own roll type, or ours where we know better than it does — a
   // concentration save is a plain "save" to dnd5e, and its bonus field is a different
@@ -133,48 +144,60 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   const rollType = messageConfig
     ? ((getFlag(messageConfig).rollType as string | undefined) ?? rollTypeFromConfig(messageConfig))
     : undefined;
-  const ctx = pathContext(rollConfig, ability);
-  const claimable = literalFields(rollConfig, rollType, ctx, index);
+  const ctx = pathContext(config, ability);
+  const claimable = literalFields(config, rollType, ctx, index);
   const captured = capturePartValues(builtConfig.parts, builtConfig.data, ability, claimable);
-  // No flat modifiers is not nothing to record: a Fireball is 8d6, and the spell and
-  // the wand it came out of still are.
   const parts = attributeItemParts(
     [
-      ...attributeFieldParts(captured, rollConfig.subject, builtConfig.data, ctx),
-      ...ownFormulaParts(rollConfig, builtConfig, rollType, claimable, index),
+      ...attributeFieldParts(captured, config.subject, builtConfig.data, ctx),
+      ...ownFormulaParts(config, builtConfig, rollType, claimable, index),
     ],
-    rollConfig,
+    config,
   );
 
-  // Dice an enchantment adds belong to the roll that actually rolls them: the item's
-  // damage. Stamping them on an attack — or on a second damage part, or a recharge of
-  // the same item — would claim dice that roll never contained.
-  const vessel = castVesselOf(rollConfig);
-  const dice = isDamage(rollType) && index === 0 ? diceFromItemEffects(rollConfig) : [];
+  const vessel = castVesselOf(config);
+  // The item the roll came from. Recorded as a role of its own rather than left to
+  // dnd5e's `flags.dnd5e.item`, which it does not set for every roll — a recharge
+  // has none, so the ability recharging would be in the registry with nothing to
+  // say it was the one that rolled.
+  const rollingItem = rollingItemOf(config);
   const referenced: ItemRef[] = [
-    rollingItemOf(rollConfig),
-    ammunitionRef(rollConfig),
+    rollingItem,
+    ammunitionRef(config),
     vessel,
     ...parts.flatMap((p) => p.from ?? []),
-    ...dice.flatMap((d) => d.from ?? []),
   ].filter((ref): ref is ItemRef => !!ref);
   const byId = <T extends { from?: ItemRef[] }>({ from, ...rest }: T) =>
     from ? { ...rest, from: from.map((r) => r.id) } : rest;
   const wireParts: EnrichedPart[] = parts.map(byId);
-  const wireDice: DiceSource[] = dice.map(byId);
+
+  const profMultiplier = rollType ? proficiencyMultiplier(config, rollType, ability) : undefined;
 
   // Stamp onto the roll's OWN options. dnd5e builds the Roll from this config
   // (`new Roll(formula, config.data, config.options)`) and a Roll serialises its
   // options, so the breakdown travels WITH the roll — which is what lets a module
   // that re-homes rolls into its own message (RSReforged rolls with `create: false`
-  // and injects the Rolls) keep its sources. That scope carries its own `items`,
-  // since no message flag of ours reaches it.
-  if (wireParts.length || wireDice.length) {
+  // and injects the Rolls) keep its sources.
+  //
+  // Everything the message flag carries is repeated here, not just the parts: under
+  // MIDI the message flag is the scope that goes missing (measured across live
+  // games), so a field written only there is a field those tables never see — the
+  // proficiency tier that tells expertise from proficiency, the vessel a spell was
+  // cast from, and the roll type only we can resolve (a concentration save).
+  // The items count as much as the parts: a Fireball is 8d6 with no flat modifier at
+  // all, and the spell — and the wand it came out of — are still what a reader wants
+  // named. Gating on parts alone lost them on exactly the tables (MIDI, RSReforged)
+  // where this is the only scope that survives.
+  if (wireParts.length || referenced.length) {
     builtConfig.options ??= {};
     builtConfig.options[MODULE_ID] = {
       parts: wireParts,
-      ...(wireDice.length ? { dice: wireDice } : {}),
       ...(referenced.length ? { items: itemEntries(referenced) } : {}),
+      ...(ability ? { ability } : {}),
+      ...(rollingItem ? { item: rollingItem.id } : {}),
+      ...(vessel ? { castFrom: vessel.id } : {}),
+      ...(profMultiplier !== undefined ? { profMultiplier } : {}),
+      ...(rollType ? { rollType } : {}),
     };
   }
 
@@ -183,12 +206,11 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   if (!messageConfig) return;
 
   const patch: Record<string, unknown> = {};
-  if (wireParts.length || wireDice.length) {
+  if (wireParts.length) {
     // Preserve rolls already captured for other indices in the same message.
     const existing = getFlag(messageConfig).rolls;
-    const rollsList =
-      (existing as Array<{ parts: EnrichedPart[]; dice?: DiceSource[] }> | undefined) ?? [];
-    rollsList[index] = { parts: wireParts, ...(wireDice.length ? { dice: wireDice } : {}) };
+    const rollsList = (existing as Array<{ parts: EnrichedPart[] }> | undefined) ?? [];
+    rollsList[index] = { parts: wireParts };
     patch.rolls = rollsList;
   }
   if (ability) patch.ability = ability;
@@ -196,12 +218,10 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   // The message's own registry: every item this roll touched, described once and
   // referred to by id from the breakdown.
   mergeItems(messageConfig, referenced);
+  if (rollingItem) patch.item = rollingItem.id;
   if (vessel) patch.castFrom = vessel.id;
 
-  if (rollType) {
-    const profMul = proficiencyMultiplier(rollConfig, rollType, ability);
-    if (profMul !== undefined) patch.profMultiplier = profMul;
-  }
+  if (profMultiplier !== undefined) patch.profMultiplier = profMultiplier;
 
   mergeFlag(messageConfig, patch);
 }

@@ -1,4 +1,4 @@
-import { type AttributedDice, type AttributedPart, type ItemRef } from "./shared";
+import { type AttributedPart, type ItemRef } from "./shared";
 import { kindOf } from "../kinds";
 import { deterministicValue } from "./parts";
 import { actorFieldForSource, type PathContext } from "./dnd5e.paths";
@@ -199,55 +199,12 @@ export function ammunitionRef(rollConfig: unknown): ItemRef | undefined {
   return ammunitionOf(rollConfig as AmmoHolder);
 }
 
-/**
- * Dice a roll gained from an effect on the item, rather than from the item's own
- * formula.
- *
- * An enchantment is an Active Effect ON the item and can change the item's damage: a
- * Vicious Weapon adds `2d6` through `system.damage.base.bonus`. Those dice weld into
- * the damage formula with nothing to say where they came from, and being dice, no
- * reading of flat modifiers finds them. A numeric change to the same field IS a flat
- * modifier and is handled as one, so only non-numeric values are reported here.
- */
-// `system.damageBonus` is deliberately not here: dnd5e only rewrites a change to that
-// key while applying it (`active-effect/enchantment.mjs`), and what it then adds is a
-// part of its own rather than dice welded into the item's formula.
-const DICE_FIELDS = new Set(["system.damage.base.bonus"]);
-
-export function diceFromItemEffects(rollConfig: unknown): AttributedDice[] {
-  const RollGlobal = (globalThis as { Roll?: typeof Roll }).Roll;
-  const item = (
-    rollConfig as {
-      subject?: {
-        item?: {
-          id?: string;
-          name?: string;
-          img?: string;
-          type?: string;
-          effects?: Iterable<EffectLike>;
-        };
-      };
-    }
-  ).subject?.item;
-  if (!RollGlobal || !item?.effects) return [];
-  const owner = itemRef(item);
-  const out: AttributedDice[] = [];
-  for (const effect of item.effects) {
-    if (effect.disabled || effect.isSuppressed) continue;
-    for (const change of effect.changes ?? []) {
-      if (!change.key || !DICE_FIELDS.has(change.key) || !isAddition(change)) continue;
-      const formula = String(change.value ?? "").trim();
-      if (!formula || deterministicValue(formula, RollGlobal) !== undefined) continue;
-      out.push({
-        source: change.key,
-        formula,
-        ...(effect.name ? { effect: effect.name } : {}),
-        ...(owner ? { from: [owner] } : {}),
-      });
-    }
-  }
-  return out;
-}
+// Dice an effect on the item adds (a Vicious Weapon's `2d6` through
+// `system.damage.base.bonus`) are deliberately NOT reported. Reading the effect says
+// what it COULD add, not what this roll did: dnd5e only applies an item's own effect
+// when it is an active enchantment, and a weapon's extra dice are commonly crit-only,
+// so an ordinary hit was credited with dice it never rolled. Attributing them
+// honestly means proving the formula is in the built roll, not that an effect exists.
 
 export function attributeItemParts(parts: AttributedPart[], rollConfig: unknown): AttributedPart[] {
   const holder = rollConfig as AmmoHolder;
