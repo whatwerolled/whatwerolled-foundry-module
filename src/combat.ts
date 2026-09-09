@@ -41,7 +41,10 @@ function combatantInfo(combatant: Loose): CombatantInfo | undefined {
     // is one of many. Absent when the token is already gone.
     ...(token ? { linked: !!token.actorLink } : {}),
     initiative: (combatant.initiative as number | null) ?? null,
-    defeated: !!combatant.defeated,
+    // Foundry's own answer, not the raw field: the field is only written by the
+    // tracker's skull toggle, while a creature dropped by applying the Dead
+    // condition is defeated everywhere in the game and would read as alive here.
+    defeated: !!combatant.isDefeated,
     hidden: !!combatant.hidden,
     // From `_source`: the prepared field holds the group DOCUMENT, and reading the id
     // off it loses the group a deleted document leaves behind.
@@ -54,13 +57,25 @@ function combatInfo(combat: Loose): CombatInfo | undefined {
   if (!id) return undefined;
   const scene = combat.scene as { id?: string; name?: string } | null | undefined;
   const created = (combat._stats as { createdTime?: number } | undefined)?.createdTime;
-  const combatants = [...((combat.combatants as Iterable<Loose> | undefined) ?? [])];
+  // `turn` indexes `turns`, Foundry's SORTED order (`combat.turns[combat.turn]` is
+  // whose turn it is) — NOT the combatants collection, which is in the order they
+  // were added. Send the array the index actually points into: both systems we
+  // support add their own initiative tiebreaks, so nobody downstream could redo
+  // the sort. Before Foundry has sorted them there is no turn to point at either.
+  const turns = [...((combat.turns as Iterable<Loose> | undefined) ?? [])];
+  const combatants = turns.length
+    ? turns
+    : [...((combat.combatants as Iterable<Loose> | undefined) ?? [])];
+  // On the way out Foundry has already nulled the live field (`_onDelete` runs
+  // before the hook), and an encounter that ends is gone — so the turn it ended on
+  // survives only in the source it was loaded with.
+  const source = combat._source as { turn?: number | null } | undefined;
   return {
     id,
     name: str(combat.name) ?? "",
     active: !!combat.active,
     round: (combat.round as number) ?? 0,
-    turn: (combat.turn as number | null) ?? null,
+    turn: (combat.turn as number | null) ?? source?.turn ?? null,
     started: !!combat.started,
     foundryCreatedAt: created ? new Date(created) : null,
     scene: scene?.id ? { id: scene.id, name: scene.name ?? "" } : null,
