@@ -97,8 +97,10 @@ function toBase64(buf: ArrayBuffer): string {
  * `foundry.local` or a bare `gm-pc` is the same unreachable machine, and handing that
  * address to the backend only produces a fetch nobody can satisfy.
  */
+// The dotless branch excludes a bracketed literal, or a public IPv6 address — which
+// has no dots either — would be read as private and dropped.
 const PRIVATE_HOST =
-  /^(localhost|[^.]+$|.+\.(local|localdomain|internal|lan|home|home\.arpa)$|127\.|0\.0\.0\.0|169\.254\.|\[::1\]|\[f[cd][0-9a-f]{2}:|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
+  /^(localhost|[^.[]+$|.+\.(local|localdomain|internal|lan|home|home\.arpa)$|127\.|0\.0\.0\.0|169\.254\.|\[::1\]|\[f[cd][0-9a-f]{2}:|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
 
 /** Only successes are remembered: a miss is usually a timeout under load, and caching
  *  it would degrade every later roll for good. */
@@ -120,18 +122,39 @@ async function entryFor(src: string): Promise<ImageEntry | undefined> {
     : undefined;
 }
 
-/** Read off the payload rather than the message: that is where pf2e's own modifier
- *  sources have been resolved, and each entry already carries the picture's path. */
+/**
+ * How many item icons one roll may carry.
+ *
+ * The receiving end takes a bounded number, and a POST has a size limit of its own,
+ * so sending more than that is work at the table paying for bytes that get dropped.
+ * A roll names a handful of items; past this the icons are left out and the item
+ * still travels by name.
+ */
+const MAX_ITEM_IMAGES = 12;
+
+/**
+ * Read off the payload rather than the message: that is where pf2e's own modifier
+ * sources have been resolved, and each entry already carries the picture's path.
+ *
+ * Every scope, not only the message's: a re-homed roll (RSReforged, MIDI) has no
+ * message flag, and reading that alone sent those tables' rolls without any icons.
+ *
+ * Compressed in parallel — each is an independent decode, and one slow picture
+ * shouldn't hold up the rest of a roll that is waiting to be posted.
+ */
 async function itemEntries(event: MessageEvent): Promise<Record<string, ImageEntry>> {
-  const out: Record<string, ImageEntry> = {};
-  // Every scope, not only the message's: a re-homed roll (RSReforged, MIDI) has no
-  // message flag, and reading that alone sent those tables' rolls without any icons.
+  const sources: [string, string][] = [];
   for (const [id, entries] of itemEntriesById(event)) {
     const img = entries.find((e) => usable(e.img))?.img;
-    if (!img) continue;
-    const entry = await entryFor(img);
-    if (entry) out[id] = entry;
+    if (img) sources.push([id, img]);
+    if (sources.length === MAX_ITEM_IMAGES) break;
   }
+  const entries = await Promise.all(sources.map(([, img]) => entryFor(img)));
+  const out: Record<string, ImageEntry> = {};
+  sources.forEach(([id], i) => {
+    const entry = entries[i];
+    if (entry) out[id] = entry;
+  });
   return out;
 }
 
@@ -152,6 +175,8 @@ export async function attachActorImage(event: MessageEvent, message: ChatMessage
 
     const images: Images = {};
     event.images = images;
+    // The portrait first, then the token, then the icons — the order the receiving
+    // end spends its budget in, so what arrives first is what a reader looks at.
     const actorSrc = actorImageSource(message);
     if (actorSrc) {
       const entry = await entryFor(actorSrc);

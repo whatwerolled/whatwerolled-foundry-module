@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants";
 import { kindOf } from "./kinds";
 import { itemEntriesById } from "./registry";
+import { proseFrom } from "./prose";
 import type { MessageEvent } from "./payload-types";
 
 /**
@@ -162,13 +163,9 @@ export const ENRICH_BUDGET_MS = 3000;
 const MAX_DESCRIPTION = 2000;
 
 /**
- * Fill in each item's description as plain text.
- *
- * Stored descriptions are HTML laced with Foundry's own syntax — `@UUID[…]{Fireball}`,
- * `[[/damage 2d6]]`, `&Reference[…]` — which means nothing outside this world, so it
- * goes through Foundry's enricher here, where the compendia exist, and the markup then
- * comes off: the app lays the card out itself. `enrichHTML` is async, which is why this
- * sits alongside the images rather than in the payload build.
+ * Fill in each item's description as plain text (see `prose.ts` for what that means
+ * and what it leaves out). Rendering is async, which is why this sits alongside the
+ * images rather than in the payload build.
  */
 export async function attachItemDescriptions(
   event: MessageEvent,
@@ -180,8 +177,6 @@ export async function attachItemDescriptions(
   const byId = itemEntriesById(event);
   if (!byId.size) return;
 
-  const enricher = foundry.applications.ux.TextEditor.implementation;
-  const flatten = document.createElement("div");
   const deadline = Date.now() + ENRICH_BUDGET_MS;
   for (const [id, entries] of byId) {
     if (Date.now() > deadline) return;
@@ -195,9 +190,8 @@ export async function attachItemDescriptions(
     const raw = descriptionFor(item);
     if (typeof raw !== "string" || !raw.trim()) continue;
     try {
-      flatten.innerHTML = await enricher.enrichHTML(raw, { secrets: false });
-      const text = (flatten.textContent ?? "").replace(/\s+/g, " ").trim();
-      if (text) for (const entry of entries) entry.description = text.slice(0, MAX_DESCRIPTION);
+      const text = await proseFrom(raw, MAX_DESCRIPTION);
+      if (text) for (const entry of entries) entry.description = text;
     } catch {
       // Leave the item without a description rather than send unrendered markup.
     }

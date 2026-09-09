@@ -17,12 +17,20 @@ async function collect(type: MessageEventType, message: ChatMessage): Promise<vo
   // One guard each, not one around all three: sharing a guard means whichever throws
   // first also cancels the ones after it, so a world whose item text won't enrich
   // would send every roll with no pictures either.
+  // Each step is named by a literal, not by `fn.name`: the build minifies, so the
+  // function's own name reaches a GM's console as one or two letters that change
+  // with every release — and naming the step that broke is the point of the split.
+  const steps: [string, (e: typeof event, m: ChatMessage) => Promise<void>][] = [
+    ["item descriptions", attachItemDescriptions],
+    ["weapon masteries", attachMasteries],
+    ["pictures", attachActorImage],
+  ];
   if (type !== MessageEventType.Deleted) {
-    for (const attach of [attachItemDescriptions, attachMasteries, attachActorImage]) {
+    for (const [name, attach] of steps) {
       try {
         await attach(event, message);
       } catch (error) {
-        console.error(`${MODULE_ID} | ${attach.name} failed; sending the roll without it`, error);
+        console.error(`${MODULE_ID} | ${name} failed; sending the roll without them`, error);
       }
     }
   }

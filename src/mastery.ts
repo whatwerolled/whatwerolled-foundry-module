@@ -1,5 +1,6 @@
 import { MODULE_ID } from "./constants";
 import { ENRICH_BUDGET_MS } from "./item-details";
+import { proseFrom } from "./prose";
 import type { MessageEvent } from "./payload";
 
 /**
@@ -39,8 +40,6 @@ export async function attachMasteries(event: MessageEvent, message: ChatMessage)
   const ids = masteryIds(message);
   if (!ids.length) return;
 
-  const enricher = foundry.applications.ux.TextEditor.implementation;
-  const flatten = document.createElement("div");
   const out: Record<string, { label: string; description?: string }> = {};
   // The rule's page can come out of a cold compendium, and the POST waits behind
   // this — so the same budget the descriptions get. Past it the labels still go.
@@ -59,9 +58,8 @@ export async function attachMasteries(event: MessageEvent, message: ChatMessage)
         } | null;
         const raw = page?.text?.content;
         if (raw) {
-          flatten.innerHTML = await enricher.enrichHTML(raw, { secrets: false });
-          const text = (flatten.textContent ?? "").replace(/\s+/g, " ").trim();
-          if (text) entry.description = text.slice(0, MAX_RULE);
+          const text = await proseFrom(raw, MAX_RULE);
+          if (text) entry.description = text;
         }
       } catch {
         // The label alone is still worth sending.
