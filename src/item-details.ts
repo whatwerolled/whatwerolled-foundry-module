@@ -190,7 +190,7 @@ export async function attachItemDescriptions(
     const raw = descriptionFor(item);
     if (typeof raw !== "string" || !raw.trim()) continue;
     try {
-      const text = await proseFrom(raw, MAX_DESCRIPTION);
+      const text = await proseFrom(raw, MAX_DESCRIPTION, item);
       if (text) for (const entry of entries) entry.description = text;
     } catch {
       // Leave the item without a description rather than send unrendered markup.

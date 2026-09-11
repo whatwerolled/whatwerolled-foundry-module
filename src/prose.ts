@@ -18,10 +18,23 @@
  *  follows. Item text is paragraphs, lists and tables of rules. */
 const BLOCK = "p,div,li,tr,br,h1,h2,h3,h4,h5,h6,blockquote,section,figcaption";
 
-export async function proseFrom(raw: string, max: number): Promise<string> {
+export async function proseFrom(
+  raw: string,
+  max: number,
+  /** The document the text belongs to. dnd5e's own `[[lookup @save.dc.value
+   *  activity=…]]` resolves against it — without one the enricher leaves the
+   *  expression in place, and a dragon's breath weapon reaches the card reading
+   *  "Dexterity Saving Throw: DC [[lookup @save.dc.value activity=bDqgmt…]]". */
+  relativeTo?: unknown,
+): Promise<string> {
   const enricher = foundry.applications.ux.TextEditor.implementation;
   const el = document.createElement("div");
-  el.innerHTML = await enricher.enrichHTML(raw, { secrets: false });
+  el.innerHTML = await enricher.enrichHTML(raw, {
+    secrets: false,
+    // Cast: callers hold these as the loose shapes the payload build works in, and
+    // the enricher only ever reads from the document it is handed.
+    relativeTo: relativeTo as foundry.abstract.Document.Any | undefined,
+  });
   el.querySelectorAll(
     '[data-visibility="gm"],[data-visibility="owner"],[data-visibility="none"]',
   ).forEach((hidden) => hidden.remove());

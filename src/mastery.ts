@@ -58,7 +58,7 @@ export async function attachMasteries(event: MessageEvent, message: ChatMessage)
         } | null;
         const raw = page?.text?.content;
         if (raw) {
-          const text = await proseFrom(raw, MAX_RULE);
+          const text = await proseFrom(raw, MAX_RULE, page);
           if (text) entry.description = text;
         }
       } catch {
