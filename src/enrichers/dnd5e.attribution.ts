@@ -27,8 +27,8 @@ type ActorLike = {
   allApplicableEffects?: () => Iterable<EffectLike>;
 };
 
-/** The one place an item becomes a payload entry, so `kind` is derived once and a
- *  nameless or id-less item can't reach the wire. */
+/** An item as a payload entry. An id is required; a name is not — an item without one
+ *  still travels, because its id is what a modifier refers to. */
 export function itemRef(item: {
   id?: string;
   name?: string;
@@ -54,10 +54,12 @@ type Contribution = { value: number; item?: ItemRef };
 /**
  * What the actor's own data and each Active Effect contribute to one bonus field.
  *
- * The rule is dnd5e's own (`Actor5e#_prepareActiveEffectAttributions`): a change
- * counts when its key IS the field — string equality, never a guess from the value —
- * and its mode is ADD. The base is the actor's stored value before any effect, read
- * from `_source`, so the pieces sum to what the roll used.
+ * dnd5e's rule (`Actor5e#_prepareActiveEffectAttributions`) minus its legacy-key
+ * shim: the change's key must equal the field exactly — never a guess from the value —
+ * and its mode must be ADD. An effect written against a legacy key is therefore
+ * counted by dnd5e and missed here, which the count check below turns into "nothing
+ * attributed" rather than a wrong name. The base is the actor's stored value before
+ * any effect, read from `_source`, so the pieces sum to what the roll used.
  */
 function contributionsForField(actor: ActorLike, field: string, rollData: unknown): Contribution[] {
   const RollGlobal = (globalThis as { Roll?: typeof Roll }).Roll;
@@ -98,11 +100,15 @@ const sum = (ns: { value: number }[]): number => ns.reduce((n, x) => n + x.value
 /**
  * Which item a modifier belongs to when the item IS the source — no effects involved.
  *
- * dnd5e reads these straight off the item that rolled or the ammunition it spent
- * (`attack-data.mjs` getAttackData / _processDamagePart), so the reference name is
- * enough to know whose bonus it is:
- *   `@weaponMagic` / `@magicalBonus` / `@bonus` → the item behind the roll
- *   `@ammoMagic` / `@ammoBonus`                → the ammunition
+ * dnd5e builds these in `attack-data.mjs` (getAttackData / _processDamagePart), so the
+ * reference name is enough to know whose bonus it is:
+ *   `@weaponMagic` / `@magicalBonus` → the rolling item's own magic bonus
+ *   `@bonus`                         → the ACTIVITY's attack bonus, credited to the
+ *                                      item it lives on (two activities on one item
+ *                                      are indistinguishable here)
+ *   `@ammoMagic` / `@ammoBonus`      → the ammunition
+ *
+ * A flat attack emits `@toHit` instead and is in neither set, so it stays unnamed.
  */
 const ITEM_SOURCES = new Set(["@weaponMagic", "@magicalBonus", "@bonus"]);
 const AMMO_SOURCES = new Set(["@ammoMagic", "@ammoBonus"]);
@@ -182,9 +188,9 @@ export function originalActorOf(rollConfig: unknown): ItemRef | undefined {
  * The item the roll itself came from — the weapon swung, the spell cast, the breath
  * weapon recharging.
  *
- * Usually the roll's subject is an Activity, which knows its item. A recharge is the
- * exception: dnd5e sets the subject to the ITEM (`uses-field.mjs` rollRecharge), so
- * accept either.
+ * Usually the roll's subject is an Activity, which knows its item. A recharge's
+ * subject is the ITEM for item-level uses and the Activity for activity-level ones
+ * (`uses-field.mjs` rollRecharge), so accept either — neither branch is dead.
  */
 export function rollingItemOf(rollConfig: unknown): ItemRef | undefined {
   const subject = (rollConfig as AmmoHolder & { subject?: { documentName?: string } }).subject;

@@ -12,7 +12,6 @@
  */
 
 export type PathContext = {
-  ability?: string;
   /** Skill / tool id, which keys that statistic's own bonus (`ste`, `thief`). */
   skill?: string;
   tool?: string;

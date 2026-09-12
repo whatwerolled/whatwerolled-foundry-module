@@ -29,11 +29,17 @@ export async function proseFrom(
 ): Promise<string> {
   const enricher = foundry.applications.ux.TextEditor.implementation;
   const el = document.createElement("div");
+  const doc = relativeTo as
+    | (foundry.abstract.Document.Any & { getRollData?: () => Record<string, unknown> })
+    | undefined;
   el.innerHTML = await enricher.enrichHTML(raw, {
     secrets: false,
-    // Cast: callers hold these as the loose shapes the payload build works in, and
-    // the enricher only ever reads from the document it is handed.
-    relativeTo: relativeTo as foundry.abstract.Document.Any | undefined,
+    relativeTo: doc,
+    // Both, because two enrichers read two different keys. `relativeTo` feeds
+    // dnd5e's `[[lookup …]]`; core's `[[…]]` reads only `rollData`, and evaluates
+    // eagerly — with none, every `@ref` in it resolves to 0, so "[[@item.level + 1]]"
+    // publishes "1" for a 10th-level spell. A number the game never showed anyone.
+    rollData: doc?.getRollData?.(),
   });
   el.querySelectorAll(
     '[data-visibility="gm"],[data-visibility="owner"],[data-visibility="none"]',

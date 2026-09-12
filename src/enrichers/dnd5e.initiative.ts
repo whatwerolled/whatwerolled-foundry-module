@@ -65,7 +65,7 @@ function applyInitiativePatch(): void {
       // Attribute the same two ways `postBuildRollConfig` does — an initiative bonus
       // comes from an item as often as any other check does (a Stone of Good Luck
       // adds to every one), and without this it reads as a bare "check bonus".
-      const parts = attributeFieldParts(captured, this, config.data, { ability });
+      const parts = attributeFieldParts(captured, this, config.data, {});
       if (parts.length) {
         const items = itemEntries(parts.flatMap((p) => p.from ?? []));
         roll.options ??= {};

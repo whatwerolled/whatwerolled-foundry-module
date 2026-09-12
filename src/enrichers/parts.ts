@@ -97,13 +97,19 @@ export function deterministicValue(formula: string, RollGlobal: typeof Roll): nu
  * An Active Effect that ADDs to a bonus formula concatenates instead of summing: two
  * items each granting +1 to saves leave the field as "1 + 1", which the roll renders
  * as two terms. One source per term keeps each pairable with the term it produced,
- * and lets each carry its own item. Anything that isn't plain addition (`2 * 3`)
- * stays one value; dice contribute nothing.
+ * and lets each carry its own item.
+ *
+ * Anything that isn't plain addition contributes NOTHING. The backend pairs a source
+ * to a term by its value, and a formula like `@prof * 2` renders as the three terms
+ * `4`, `*`, `2` — so sending its product, 8, matches no term on that card and the
+ * label either vanishes or lands on an unrelated `+8` elsewhere in the same roll.
+ * Dice contribute nothing for the same reason.
  */
 function resolvedValues(formula: string, RollGlobal: typeof Roll): number[] {
   const terms = formula.split(/(?=[+-])/).map((t) => t.replace(/\s+/g, ""));
   const pieces = terms.filter(Boolean).map((t) => (NUMERIC_LITERAL.test(t) ? Number(t) : NaN));
-  if (pieces.length > 1 && !pieces.some(Number.isNaN)) return pieces;
+  if (pieces.some(Number.isNaN)) return [];
+  if (pieces.length > 1) return pieces;
   const total = deterministicValue(formula, RollGlobal);
   return total === undefined ? [] : [total];
 }

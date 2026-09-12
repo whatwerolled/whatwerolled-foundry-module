@@ -25,9 +25,8 @@ import {
   rollingItemOf,
 } from "./dnd5e.attribution";
 
-function pathContext(rollConfig: RollConfig, ability: string | undefined): PathContext {
+function pathContext(rollConfig: RollConfig): PathContext {
   return {
-    ability,
     skill: rollConfig.skill,
     tool: rollConfig.tool,
     actionType: rollConfig.subject?.getActionType?.(rollConfig.attackMode),
@@ -71,7 +70,7 @@ function literalFields(
  * already claimed as a field and must not be credited to the item as well.
  */
 function ownFormulaParts(
-  rollConfig: RollConfig,
+  item: ItemRef | undefined,
   builtConfig: BuiltRollConfig,
   rollType: string | undefined,
   claimable: LiteralField[],
@@ -81,7 +80,6 @@ function ownFormulaParts(
   const base = Array.isArray(builtConfig.parts) ? builtConfig.parts[0] : undefined;
   if (typeof base !== "string" || base.includes("@")) return [];
   if (claimable.some((field) => field.formula === base.trim())) return [];
-  const item = rollingItemOf(rollConfig);
   return literalSegments(base).map((value) => ({
     source: "damage.base",
     value,
@@ -141,26 +139,27 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   // dnd5e's own roll type, or ours where we know better than it does — a
   // concentration save is a plain "save" to dnd5e, and its bonus field is a different
   // one, so reading only dnd5e's answer would never claim it.
+  const nativeType = messageConfig ? rollTypeFromConfig(messageConfig) : undefined;
   const rollType = messageConfig
-    ? ((getFlag(messageConfig).rollType as string | undefined) ?? rollTypeFromConfig(messageConfig))
+    ? ((getFlag(messageConfig).rollType as string | undefined) ?? nativeType)
     : undefined;
-  const ctx = pathContext(config, ability);
+  const ctx = pathContext(config);
   const claimable = literalFields(config, rollType, ctx, index);
   const captured = capturePartValues(builtConfig.parts, builtConfig.data, ability, claimable);
-  const parts = attributeItemParts(
-    [
-      ...attributeFieldParts(captured, config.subject, builtConfig.data, ctx),
-      ...ownFormulaParts(config, builtConfig, rollType, claimable, index),
-    ],
-    config,
-  );
-
-  const vessel = castVesselOf(config);
   // The item the roll came from. Recorded as a role of its own rather than left to
   // dnd5e's `flags.dnd5e.item`, which it does not set for every roll — a recharge
   // has none, so the ability recharging would be in the registry with nothing to
   // say it was the one that rolled.
   const rollingItem = rollingItemOf(config);
+  const parts = attributeItemParts(
+    [
+      ...attributeFieldParts(captured, config.subject, builtConfig.data, ctx),
+      ...ownFormulaParts(rollingItem, builtConfig, rollType, claimable, index),
+    ],
+    config,
+  );
+
+  const vessel = castVesselOf(config);
   const referenced: ItemRef[] = [
     rollingItem,
     ammunitionRef(config),
@@ -171,7 +170,12 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
     from ? { ...rest, from: from.map((r) => r.id) } : rest;
   const wireParts: EnrichedPart[] = parts.map(byId);
 
-  const profMultiplier = rollType ? proficiencyMultiplier(config, rollType, ability) : undefined;
+  // The NATIVE type here, not our override: proficiency comes from the field dnd5e
+  // actually rolled, and a concentration save rolls the Constitution save — our
+  // "concentration" matches none of its branches and would drop the tier entirely.
+  const profMultiplier = nativeType
+    ? proficiencyMultiplier(config, nativeType, ability)
+    : undefined;
 
   // Stamp onto the roll's OWN options. dnd5e builds the Roll from this config
   // (`new Roll(formula, config.data, config.options)`) and a Roll serialises its
@@ -180,19 +184,15 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   // and injects the Rolls) keep its sources.
   //
   // Everything the message flag carries is repeated here, not just the parts: under
-  // MIDI the message flag is the scope that goes missing (measured across live
-  // games), so a field written only there is a field those tables never see — the
-  // proficiency tier that tells expertise from proficiency, the vessel a spell was
-  // cast from, and the roll type only we can resolve (a concentration save).
-  // The items count as much as the parts: a Fireball is 8d6 with no flat modifier at
-  // all, and the spell — and the wand it came out of — are still what a reader wants
-  // named. Gating on parts alone lost them on exactly the tables (MIDI, RSReforged)
-  // where this is the only scope that survives.
+  // MIDI and RSReforged the message flag is the scope that goes missing, so a field
+  // written only there is a field those tables never see — including the items, since
+  // a Fireball has no flat modifier and would lose the spell and the wand entirely.
+  const entries = itemEntries(referenced);
   if (wireParts.length || referenced.length) {
     builtConfig.options ??= {};
     builtConfig.options[MODULE_ID] = {
       parts: wireParts,
-      ...(referenced.length ? { items: itemEntries(referenced) } : {}),
+      ...(referenced.length ? { items: entries } : {}),
       ...(ability ? { ability } : {}),
       ...(rollingItem ? { item: rollingItem.id } : {}),
       ...(vessel ? { castFrom: vessel.id } : {}),
@@ -217,7 +217,7 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
 
   // The message's own registry: every item this roll touched, described once and
   // referred to by id from the breakdown.
-  mergeItems(messageConfig, referenced);
+  mergeItems(messageConfig, entries);
   if (rollingItem) patch.item = rollingItem.id;
   if (vessel) patch.castFrom = vessel.id;
 

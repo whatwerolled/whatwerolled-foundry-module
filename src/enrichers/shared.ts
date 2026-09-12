@@ -141,14 +141,13 @@ export function mergeFlag(messageConfig: MessageConfig, patch: Record<string, un
  * on every roll. An item can appear in several roles at once (the weapon that rolled
  * also granting the bonus), and keying by id keeps one entry per item.
  */
-export function mergeItems(messageConfig: MessageConfig, refs: (ItemRef | undefined)[]): void {
-  const items = { ...((getFlag(messageConfig).items as Record<string, unknown>) ?? {}) };
-  const entries = itemEntries(refs);
+export function mergeItems(
+  messageConfig: MessageConfig,
+  entries: Record<string, Omit<ItemRef, "id">>,
+): void {
   if (!Object.keys(entries).length) return;
-  for (const [id, entry] of Object.entries(entries)) {
-    items[id] = { ...(items[id] as object | undefined), ...entry };
-  }
-  mergeFlag(messageConfig, { items });
+  const existing = getFlag(messageConfig).items as Record<string, unknown> | undefined;
+  mergeFlag(messageConfig, { items: { ...existing, ...entries } });
 }
 
 /** Items keyed by id, as the payload carries them. */
