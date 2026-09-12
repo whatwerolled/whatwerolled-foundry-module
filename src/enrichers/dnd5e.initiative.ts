@@ -1,6 +1,6 @@
 import { MODULE_ID } from "../constants";
 import { capturePartValues } from "./parts";
-import { attributeFieldParts } from "./dnd5e.attribution";
+import { attributeFieldParts, initiativeAbility } from "./dnd5e.attribution";
 import { itemEntries } from "./shared";
 
 type InitiativeConfig = { parts?: unknown; data?: unknown; options?: { fixed?: unknown } } | null;
@@ -55,13 +55,9 @@ function applyInitiativePatch(): void {
       // With the `initiativeScore` setting on, the roll is a flat score and contains
       // none of the config's parts; describing it would name modifiers it never had.
       if (!config || config.options?.fixed !== undefined) return roll;
-      // `mod` is the initiative ability's modifier — the same short form the dialog
-      // path resolves, so normalise it to the long reference here too.
-      const ability =
-        this.system?.attributes?.init?.ability ||
-        (CONFIG as { DND5E?: { defaultAbilities?: { initiative?: string } } }).DND5E
-          ?.defaultAbilities?.initiative;
-      const captured = capturePartValues(config.parts, config.data, ability);
+      // `@mod` here is the initiative ability's modifier; naming it is what turns a
+      // bare number on the card into "Dexterity modifier".
+      const captured = capturePartValues(config.parts, config.data, initiativeAbility(this));
       // Attribute the same two ways `postBuildRollConfig` does — an initiative bonus
       // comes from an item as often as any other check does (a Stone of Good Luck
       // adds to every one), and without this it reads as a bare "check bonus".

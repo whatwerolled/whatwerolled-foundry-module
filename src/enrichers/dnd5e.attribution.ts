@@ -125,15 +125,48 @@ type AmmoHolder = {
   };
 };
 
-/** The ammunition of this roll: dnd5e keeps the item on a damage config and the id on
- *  an attack's, so accept either. */
-function ammunitionOf(rollConfig: AmmoHolder): ItemRef | undefined {
+type AmmoItem = Parameters<typeof itemRef>[0] & {
+  system?: { damage?: { replace?: boolean; base?: { formula?: string } } };
+};
+
+/** The ammunition of this roll: dnd5e keeps the item itself on a damage config and its
+ *  id on an attack's, so accept either. */
+function ammunitionItem(rollConfig: AmmoHolder): AmmoItem | undefined {
   const ammo = rollConfig.ammunition;
-  if (ammo && typeof ammo === "object") return itemRef(ammo as { id?: string });
-  if (typeof ammo === "string") {
-    return itemRef(rollConfig.subject?.actor?.items?.get(ammo) ?? {});
-  }
+  if (ammo && typeof ammo === "object") return ammo as AmmoItem;
+  if (typeof ammo === "string") return rollConfig.subject?.actor?.items?.get(ammo) as AmmoItem;
   return undefined;
+}
+
+function ammunitionOf(rollConfig: AmmoHolder): ItemRef | undefined {
+  return itemRef(ammunitionItem(rollConfig) ?? {});
+}
+
+/**
+ * Whether the ammunition's own damage REPLACED the weapon's, rather than being added
+ * after it.
+ *
+ * dnd5e splices the ammunition's base damage into the weapon's slot when the ammo is
+ * set to replace (`attack-data.mjs` getDamageConfig), and nothing on the built roll
+ * says it happened. Without asking, the formula in that slot — the ammunition's — is
+ * credited to the weapon, naming an item that granted none of it.
+ */
+export function ammunitionReplacesBase(rollConfig: unknown): boolean {
+  const ammo = ammunitionItem(rollConfig as AmmoHolder)?.system?.damage;
+  return !!ammo?.replace && !!ammo.base?.formula;
+}
+
+/** Which ability an actor's initiative uses — its own, or the game's default. Both
+ *  initiative paths resolve it here so the two can't disagree. */
+export function initiativeAbility(subject: unknown): string | undefined {
+  const actor = subject as
+    | { system?: { attributes?: { init?: { ability?: string } } } }
+    | undefined;
+  return (
+    actor?.system?.attributes?.init?.ability ||
+    (CONFIG as { DND5E?: { defaultAbilities?: { initiative?: string } } }).DND5E?.defaultAbilities
+      ?.initiative
+  );
 }
 
 /**

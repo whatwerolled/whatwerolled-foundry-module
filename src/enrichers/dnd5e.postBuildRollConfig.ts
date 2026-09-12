@@ -19,9 +19,11 @@ import { capturePartValues, literalSegments, type LiteralField } from "./parts";
 import { literalActorFields, type PathContext } from "./dnd5e.paths";
 import {
   ammunitionRef,
+  ammunitionReplacesBase,
   attributeFieldParts,
   attributeItemParts,
   castVesselOf,
+  initiativeAbility,
   rollingItemOf,
 } from "./dnd5e.attribution";
 
@@ -120,7 +122,13 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   const ability =
     data?.abilityId ??
     rollConfig.ability ??
-    (rollConfig.subject as unknown as AttackActivity | undefined)?.ability;
+    (rollConfig.subject as unknown as AttackActivity | undefined)?.ability ??
+    // Initiative rolled through its own dialog names no ability anywhere, so `@mod`
+    // would reach the card as a bare number — while the same character rolling from
+    // the combat tracker gets it named. Its own hook is what says which roll this is.
+    (rollConfig.hookNames?.includes("initiativeDialog")
+      ? initiativeAbility(rollConfig.subject)
+      : undefined);
 
   // What the player actually chose in the dialog. dnd5e puts those choices on the
   // BUILT roll's options (`attack.mjs` _buildAttackConfig) and never writes them back
@@ -151,10 +159,14 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   // has none, so the ability recharging would be in the registry with nothing to
   // say it was the one that rolled.
   const rollingItem = rollingItemOf(config);
+  // Whose formula sits in the base damage slot: the weapon's, unless the ammunition
+  // replaced it rather than adding after it.
+  const ammunition = ammunitionRef(config);
+  const baseOwner = ammunitionReplacesBase(config) ? ammunition : rollingItem;
   const parts = attributeItemParts(
     [
       ...attributeFieldParts(captured, config.subject, builtConfig.data, ctx),
-      ...ownFormulaParts(rollingItem, builtConfig, rollType, claimable, index),
+      ...ownFormulaParts(baseOwner, builtConfig, rollType, claimable, index),
     ],
     config,
   );
@@ -162,7 +174,7 @@ function onPostBuild(rollConfig: RollConfig, builtConfig: BuiltRollConfig, index
   const vessel = castVesselOf(config);
   const referenced: ItemRef[] = [
     rollingItem,
-    ammunitionRef(config),
+    ammunition,
     vessel,
     ...parts.flatMap((p) => p.from ?? []),
   ].filter((ref): ref is ItemRef => !!ref);

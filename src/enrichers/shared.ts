@@ -63,6 +63,9 @@ export type RollConfig = {
   isConcentration?: boolean;
   /** Chosen in the attack dialog; decides which action-type bonuses apply. */
   attackMode?: string;
+  /** Which of dnd5e's roll hooks this config will fire. The only thing that says an
+   *  initiative roll made through its dialog IS one — it carries no roll type. */
+  hookNames?: string[];
   /** Chosen in the attack dialog: the ammunition item, or its id on an attack. Read
    *  from the BUILT roll's options — the process config keeps the last one used. */
   ammunition?: unknown;
