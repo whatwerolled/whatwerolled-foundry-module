@@ -1,9 +1,8 @@
 import type { MessageEventType, UserRole } from "./types";
 
 // The wire shapes the collector builds and sends. The module only *produces*
-// these — it never reads or validates an incoming payload — so plain TS types
-// are enough here. Runtime validation (zod) lives with the consumers (e2e suite
-// and backend), not in the shipped module.
+// these — it never reads or validates an incoming payload — so plain TS types are
+// enough here; runtime validation belongs to whoever receives them.
 
 export type Author = {
   id: string;
@@ -31,6 +30,21 @@ export type ActorInfo = {
 };
 
 export type ImageEntry = { dataBase64: string } | { sourceUrl: string };
+
+/**
+ * The pictures behind one roll.
+ *
+ * `actor` is the character's portrait — who they are. `token` is what stood on the
+ * table for this roll, which is not the same thing: an unlinked token carries art of
+ * its own, so six goblins from one template can each look different, and a token can
+ * be dressed for a scene without the character's portrait changing. `items` is keyed
+ * by item id, matching the `items` section of our flag.
+ */
+export type Images = {
+  actor?: ImageEntry;
+  token?: ImageEntry;
+  items?: Record<string, ImageEntry>;
+};
 
 type Visibility = {
   whisper: string[];
@@ -75,5 +89,5 @@ export type MessageEvent = {
   eventType: MessageEventType;
   messageId: string;
   collectedData: CollectedData | null;
-  images?: { actor?: ImageEntry };
+  images?: Images;
 };

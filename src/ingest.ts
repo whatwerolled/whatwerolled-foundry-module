@@ -1,4 +1,4 @@
-import { CAMPAIGN_ID_SETTINGS_KEY, INGEST_URL, MODULE_ID } from "./constants";
+import { INGEST_URL, MODULE_ID, Setting } from "./constants";
 import type { MessageEvent } from "./payload";
 
 /**
@@ -6,7 +6,7 @@ import type { MessageEvent } from "./payload";
  * Bearer token (not sent in the body); a blank id disables upload.
  */
 export async function postEvent(event: MessageEvent): Promise<void> {
-  const campaignId = game.settings!.get(MODULE_ID, CAMPAIGN_ID_SETTINGS_KEY).trim();
+  const campaignId = game.settings!.get(MODULE_ID, Setting.CampaignId).trim();
   if (!campaignId) return;
   try {
     const res = await fetch(INGEST_URL, {

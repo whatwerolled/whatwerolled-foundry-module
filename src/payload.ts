@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants";
+import { itemsForPayload } from "./item-details";
 import { MessageEventType, UserRole } from "./types";
 import type {
   Author,
@@ -116,7 +117,10 @@ function buildCollectedData(message: ChatMessage): CollectedData {
     system: systemOf(),
     module: { version: game?.modules?.get(MODULE_ID)?.version ?? "" },
     flavor: source.flavor ?? "",
-    flags: (source.flags ?? {}) as CollectedData["flags"],
+    // Foundry's own flags pass through untouched; our own section gains the items the
+    // system named for itself (pf2e). Descriptions are filled in afterwards — they
+    // need to be read asynchronously. See item-details.ts.
+    flags: itemsForPayload((source.flags ?? {}) as Record<string, unknown>, message),
     rolls: (source.rolls ?? []).map((r) => JSON.parse(r) as Record<string, unknown>),
   };
 }
