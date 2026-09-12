@@ -3,6 +3,43 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.7.0
+
+**Every roll now says what it was made with** — the weapon swung, the ammunition spent,
+the wand or scroll a spell was cast from, and the item behind each bonus. A `+1` used to
+be a `+1`; now it names the ring, the arrows or the feature that granted it.
+
+**The items themselves travel with the roll** — name, picture and description — so each
+one is readable on the card rather than a name your table has to recognise.
+
+**An attack names the weapon mastery it used**, with the rule that mastery applies.
+
+**Token art appears alongside the character's portrait.** Six goblins from one template
+each look like themselves, and a druid in wild shape rolls as the bear.
+
+**A player character stays one character** however often its token is placed on the map,
+while copies of a shared creature stay told apart.
+
+**Initiative is recorded like any other roll**, with the ability behind its modifier named.
+
+**GM-only text stays at the table.** Text marked GM-only in an item's description is
+removed before anything is sent.
+
+**A new setting: Collect rolls**, on by default. Turn it off and no roll leaves your
+table, without uninstalling.
+
+Fixed:
+
+- Saving throws — death saves and concentration included — recorded no bonuses at all
+  when two items each granted one.
+- A flat damage bonus from an item was invisible.
+- A spell with no flat modifier, like Fireball, lost the spell and the item it was cast
+  from.
+- A recharge never named the ability recharging.
+- Ammunition set to replace a weapon's damage credited the weapon with it.
+- One unreadable reference in an item's description could discard the whole roll, and a
+  world whose item text wouldn't render sent every roll with no pictures.
+
 ## 0.6.0
 
 **Roll table draws now show what came up** — the entry and the table it came from.
