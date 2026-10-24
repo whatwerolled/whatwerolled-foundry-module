@@ -6,6 +6,7 @@ import type {
   ActorInfo,
   CollectedData,
   MessageEvent,
+  Sender,
   WorldInfo,
   SystemInfo,
 } from "./payload-types";
@@ -42,6 +43,12 @@ function authorOf(message: ChatMessage): Author | null {
     avatar: absoluteUrl(user?.avatar),
     role: ROLE_BY_VALUE[user?.role ?? 0] ?? UserRole.None,
   };
+}
+
+function senderOf(): Sender | null {
+  const user = game?.user;
+  if (!user?.id) return null;
+  return { id: user.id, role: ROLE_BY_VALUE[user.role ?? 0] ?? UserRole.None };
 }
 
 function actorOf(message: ChatMessage): ActorInfo | null {
@@ -108,6 +115,7 @@ function buildCollectedData(message: ChatMessage): CollectedData {
   return {
     messageCreatedAt: new Date(message.timestamp),
     author: authorOf(message),
+    sender: senderOf(),
     actor: actorOf(message),
     visibility: {
       whisper: (message.whisper ?? []) as string[],
