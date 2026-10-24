@@ -6,6 +6,7 @@ import type {
   ActorInfo,
   CollectedData,
   MessageEvent,
+  Sender,
   WorldInfo,
   SystemInfo,
 } from "./payload-types";
@@ -33,10 +34,7 @@ function absoluteUrl(path: string | null | undefined): string {
 
 function authorOf(message: ChatMessage): Author | null {
   const source = message.toObject() as { author?: string | null };
-  return userOf(source.author ?? null);
-}
-
-function userOf(id: string | null | undefined): Author | null {
+  const id = source.author ?? null;
   if (!id) return null;
   const user = game?.users?.get(id);
   return {
@@ -45,6 +43,12 @@ function userOf(id: string | null | undefined): Author | null {
     avatar: absoluteUrl(user?.avatar),
     role: ROLE_BY_VALUE[user?.role ?? 0] ?? UserRole.None,
   };
+}
+
+function senderOf(): Sender | null {
+  const user = game?.user;
+  if (!user?.id) return null;
+  return { id: user.id, role: ROLE_BY_VALUE[user.role ?? 0] ?? UserRole.None };
 }
 
 function actorOf(message: ChatMessage): ActorInfo | null {
@@ -111,7 +115,7 @@ function buildCollectedData(message: ChatMessage): CollectedData {
   return {
     messageCreatedAt: new Date(message.timestamp),
     author: authorOf(message),
-    sender: userOf(game?.user?.id),
+    sender: senderOf(),
     actor: actorOf(message),
     visibility: {
       whisper: (message.whisper ?? []) as string[],

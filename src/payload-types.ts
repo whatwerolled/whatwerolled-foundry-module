@@ -11,6 +11,8 @@ export type Author = {
   role: UserRole;
 };
 
+export type Sender = Pick<Author, "id" | "role">;
+
 // The specific token instance that rolled — present when the speaker is a token.
 // `id` is the unique per-token key; `name` is the token's display name (e.g.
 // "Miserable Adult Red Dragon"). `linked` is Foundry's `token.actorLink` — the
@@ -72,7 +74,7 @@ export type ModuleInfo = {
 export type CollectedData = {
   messageCreatedAt: Date;
   author: Author | null;
-  sender: Author | null;
+  sender: Sender | null;
   actor: ActorInfo | null;
   visibility: Visibility;
   world: WorldInfo;
