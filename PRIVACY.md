@@ -10,6 +10,8 @@ For each roll, the module sends to the What We Rolled service:
 - the roll formula, dice, and result;
 - the name and avatar of the player who rolled, and which character or token made
   the roll;
+- the name and avatar of the player whose game sent it — every connected player's
+  game sends its own copy of each roll;
 - your world name and game system, and their versions;
 - whether the roll was a whisper or blind roll, and when it happened.
 

@@ -33,7 +33,10 @@ function absoluteUrl(path: string | null | undefined): string {
 
 function authorOf(message: ChatMessage): Author | null {
   const source = message.toObject() as { author?: string | null };
-  const id = source.author ?? null;
+  return userOf(source.author ?? null);
+}
+
+function userOf(id: string | null | undefined): Author | null {
   if (!id) return null;
   const user = game?.users?.get(id);
   return {
@@ -108,6 +111,7 @@ function buildCollectedData(message: ChatMessage): CollectedData {
   return {
     messageCreatedAt: new Date(message.timestamp),
     author: authorOf(message),
+    sender: userOf(game?.user?.id),
     actor: actorOf(message),
     visibility: {
       whisper: (message.whisper ?? []) as string[],
