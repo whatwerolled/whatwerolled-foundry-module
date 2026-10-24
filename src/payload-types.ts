@@ -72,8 +72,6 @@ export type ModuleInfo = {
 export type CollectedData = {
   messageCreatedAt: Date;
   author: Author | null;
-  // The user whose client sent this copy. Every connected client mirrors the same
-  // message, and each one sees the world through its own permissions.
   sender: Author | null;
   actor: ActorInfo | null;
   visibility: Visibility;
