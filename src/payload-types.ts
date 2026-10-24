@@ -11,7 +11,10 @@ export type Author = {
   role: UserRole;
 };
 
-export type Sender = Pick<Author, "id" | "role">;
+export type Sender = {
+  id: string;
+  role: UserRole;
+};
 
 // The specific token instance that rolled — present when the speaker is a token.
 // `id` is the unique per-token key; `name` is the token's display name (e.g.
