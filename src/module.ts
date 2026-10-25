@@ -9,6 +9,7 @@ import { attachMasteries } from "./mastery";
 
 async function collect(type: MessageEventType, message: ChatMessage): Promise<void> {
   if (!game.settings!.get(MODULE_ID, Setting.CollectRolls)) return;
+  if (!message.isAuthor && !game.users!.activeGM?.isSelf) return;
   const event = buildEvent(type, message);
   // Enrichment reads far more of the world than the message itself — items, effects,
   // compendia, a canvas for the pictures — and any of it can throw on data we have
