@@ -1,4 +1,4 @@
-import { MODULE_ID, Setting } from "./constants";
+import { MODULE_ID, SETTLE_MS, Setting } from "./constants";
 import { registerEnrichers } from "./enrichers";
 import { captureRollTableDraws } from "./roll-table";
 import { buildEvent, hasRolls, MessageEventType } from "./payload";
@@ -9,7 +9,6 @@ import { attachMasteries } from "./mastery";
 
 async function collect(type: MessageEventType, message: ChatMessage): Promise<void> {
   if (!game.settings!.get(MODULE_ID, Setting.CollectRolls)) return;
-  if (!message.isAuthor && !game.users!.activeGM?.isSelf) return;
   const event = buildEvent(type, message);
   // Enrichment reads far more of the world than the message itself — items, effects,
   // compendia, a canvas for the pictures — and any of it can throw on data we have
@@ -36,6 +35,24 @@ async function collect(type: MessageEventType, message: ChatMessage): Promise<vo
     }
   }
   await postEvent(event);
+}
+
+const pending = new Map<string, number>();
+
+/** Send a message once it has stopped changing. A player's copy waits longer, so the GM's lands first. */
+function queue(type: MessageEventType, message: ChatMessage): void {
+  if (!hasRolls(message)) return;
+  if (!message.isAuthor && !game.users!.activeGM?.isSelf) return;
+  const id = message.id!;
+  clearTimeout(pending.get(id));
+  const timer = window.setTimeout(
+    () => {
+      pending.delete(id);
+      void collect(type, message);
+    },
+    game.user!.isGM ? SETTLE_MS.gm : SETTLE_MS.player,
+  );
+  pending.set(id, timer);
 }
 
 function registerSwitch(key: Setting, name: string, hint: string): void {
@@ -68,16 +85,7 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", () => {
-  Hooks.on("createChatMessage", (message) => {
-    if (!hasRolls(message)) return;
-    void collect(MessageEventType.Created, message);
-  });
-  Hooks.on("updateChatMessage", (message) => {
-    if (!hasRolls(message)) return;
-    void collect(MessageEventType.Updated, message);
-  });
-  Hooks.on("deleteChatMessage", (message) => {
-    if (!hasRolls(message)) return;
-    void collect(MessageEventType.Deleted, message);
-  });
+  Hooks.on("createChatMessage", (message) => queue(MessageEventType.Created, message));
+  Hooks.on("updateChatMessage", (message) => queue(MessageEventType.Updated, message));
+  Hooks.on("deleteChatMessage", (message) => queue(MessageEventType.Deleted, message));
 });
