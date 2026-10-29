@@ -87,7 +87,7 @@ What We Rolled captures ordinary rolls and rolls made through popular roll helpe
 ## Your data
 
 What We Rolled only sends **roll data** — the roll itself (formula, dice, result),
-who rolled it (player name and avatar) and which character, your world and game
+who rolled it (player name) and which character, your world and game
 system (and their versions), whether the roll was whispered or blind, and when it
 happened. It **never** sends your chat, notes, or anything that isn't a roll. Nothing
 is sent until you set a Campaign ID, and clearing it stops sending at any time. See

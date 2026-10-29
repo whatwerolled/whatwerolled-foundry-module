@@ -7,7 +7,6 @@ import type { MessageEventType, UserRole } from "./types";
 export type Author = {
   id: string;
   name: string;
-  avatar: string;
   role: UserRole;
 };
 
@@ -30,7 +29,6 @@ type TokenInfo = {
 export type ActorInfo = {
   id: string;
   name: string;
-  image: string;
   token: TokenInfo | null;
 };
 
@@ -59,7 +57,6 @@ type Visibility = {
 export type WorldInfo = {
   id: string;
   title: string;
-  image: string;
 };
 
 export type SystemInfo = {

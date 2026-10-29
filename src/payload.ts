@@ -27,11 +27,6 @@ export function hasRolls(message: ChatMessage): boolean {
   return !!message.rolls?.length;
 }
 
-function absoluteUrl(path: string | null | undefined): string {
-  if (!path) return "";
-  return new URL(path, window.location.origin).href;
-}
-
 function authorOf(message: ChatMessage): Author | null {
   const source = message.toObject() as { author?: string | null };
   const id = source.author ?? null;
@@ -40,7 +35,6 @@ function authorOf(message: ChatMessage): Author | null {
   return {
     id,
     name: user?.name ?? "",
-    avatar: absoluteUrl(user?.avatar),
     role: ROLE_BY_VALUE[user?.role ?? 0] ?? UserRole.None,
   };
 }
@@ -63,7 +57,6 @@ function actorOf(message: ChatMessage): ActorInfo | null {
   return {
     id,
     name: actor?.name ?? "",
-    image: absoluteUrl(actor?.img),
     token: tokenId
       ? {
           id: tokenId,
@@ -83,17 +76,9 @@ function linkedOf(sceneId: string | null, tokenId: string): { linked?: boolean }
 
 function worldOf(): WorldInfo {
   const w = game?.world;
-  let image = "";
-  for (const m of w?.media ?? []) {
-    if (m.url) {
-      image = absoluteUrl(m.url);
-      break;
-    }
-  }
   return {
     id: w?.id ?? "",
     title: w?.title ?? "",
-    image,
   };
 }
 
