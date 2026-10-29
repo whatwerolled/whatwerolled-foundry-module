@@ -99,6 +99,9 @@ function buildCollectedData(message: ChatMessage): CollectedData {
   };
   return {
     messageCreatedAt: new Date(message.timestamp),
+    // Stamped by the Foundry server on every change and the same on every client,
+    // so it orders copies that arrive out of order.
+    messageModifiedAt: new Date(message._stats.modifiedTime!),
     author: authorOf(message),
     sender: senderOf(),
     actor: actorOf(message),
