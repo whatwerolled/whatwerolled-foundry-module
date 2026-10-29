@@ -73,6 +73,7 @@ export type ModuleInfo = {
 // loose bag — the backend interprets it.
 export type CollectedData = {
   messageCreatedAt: Date;
+  messageModifiedAt: Date;
   author: Author | null;
   sender: Sender | null;
   actor: ActorInfo | null;

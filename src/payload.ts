@@ -99,6 +99,7 @@ function buildCollectedData(message: ChatMessage): CollectedData {
   };
   return {
     messageCreatedAt: new Date(message.timestamp),
+    messageModifiedAt: new Date(message._stats.modifiedTime!),
     author: authorOf(message),
     sender: senderOf(),
     actor: actorOf(message),
