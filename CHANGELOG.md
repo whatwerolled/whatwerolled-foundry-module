@@ -3,6 +3,15 @@
 Written for GMs — what changed at your table, not commit logs. Each version's
 section here becomes that release's notes on GitHub and Foundry.
 
+## 0.8.0
+
+**Fewer updates are sent.** Each roll is now sent only by the player who rolled it and the
+GM, and only once it has finished changing.
+
+Fixed:
+
+- A whisper or blind roll the GM reveals now turns public on whatwerolled.com too.
+
 ## 0.7.0
 
 **Every roll now says what it was made with** — the weapon swung, the ammunition spent,
